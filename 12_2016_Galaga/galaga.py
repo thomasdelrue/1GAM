@@ -15,17 +15,18 @@ from pygame.locals import *
 
 
 def mainGame():
-	global world, screen, clock, log, font
+	global screen, clock, log, font, ship, aliens, backdrop, statusBar, \
+		scoreBoard, gameScreen
 	pygame.init()
 	
 	screen = pygame.display.set_mode(SCREENSIZE, 0, 32)
 	pygame.display.set_caption('Galaga')
 	
-	font = pygame.font.SysFont("arial", SHIPSIZE / 2)
+	font = pygame.font.SysFont("arial", SHIPSIZE // 2)
 	clock = pygame.time.Clock()
 	
 	# initialize world and objects
-	world = {}
+	#world = {}
 	log = Debug()
 	
 	log.message('start of debug session')
@@ -37,20 +38,12 @@ def mainGame():
 	scoreBoard = ScoreBoard()
 	gameScreen = pygame.Surface((VIEWWIDTH, VIEWHEIGHT))
 	
-	world['ship'] = ship
-	world['backdrop'] = backdrop
-	world['statusBar'] = statusBar
-	world['scoreBoard'] = scoreBoard
-	world['gameScreen'] = gameScreen
-	world['aliens'] = aliens
 	
 	for i in range(5):
 		for j in range(10):
 			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j)))
 	
 	movex = 0
-	
-	log.message('formation: {}'.format(aliens.formation))
 	
 	screen.fill(BLACK)
 	
@@ -77,15 +70,18 @@ def mainGame():
 		
 		# update states
 		timePassed = clock.tick(FPS) / 1000.0
-		#log.message('timePassed = {}'.format(timePassed))
-		
+
+		backdrop.moveStars(timePassed)
+				
 		if movex:
-			ship.move(movex * timePassed * SHIPSPEED)
+			ship.move(movex * timePassed * MOVESPEED)
+			
 		ship.update()
+		
 		for bolt in ship.bolts:
 			bolt.move(timePassed)
 
-		aliens.shuffleMovement()
+		aliens.moveFormation()
 
 		# check for collisions?
 		for bolt in ship.bolts:
@@ -102,38 +98,25 @@ def mainGame():
 
 
 def paintWorld():
-	gameScreen = world['gameScreen']
 	gameScreen.fill(BLACK)
-
 	
-	# scoreBoard
-	scoreBoard = world['scoreBoard']
-	if scoreBoard.changed:
-		log.message('scoreBoard changed')
-		scoreBoard.surface.fill(GREEN)
-		screen.blit(scoreBoard.surface, SCOREBOARD.topleft)
-		scoreBoard.changed = False
-	
+	drawScoreBoard()
+	drawStatusBar()
 		
-	
 	# draw backdrop
-	backdrop = world['backdrop']
-	for k in backdrop.stars:
-		pygame.draw.circle(gameScreen, backdrop.stars[k][1], backdrop.stars[k][0], 1, 1)
+	for n in backdrop.stars:
+		
+		pygame.draw.circle(gameScreen, backdrop.stars[n]['colour'], tuple(backdrop.stars[n]['pos']), 1, 1)
 	
 	# draw ship
-	ship = world['ship']
 	for b in ship.bolts:
 		pygame.draw.rect(gameScreen, b.colour, b.shape, 0)
 
-	shipForm = pygame.Rect(0, 0, SHIPSIZE, SHIPSIZE)
-	shipForm.center = ship.pos
-	pygame.draw.rect(gameScreen, ship.colour, shipForm, 0)
+	ship.shape.center = ship.pos
+	pygame.draw.rect(gameScreen, ship.colour, ship.shape, 0)
 	
 	
 	# aliens
-	aliens = world['aliens']
-	#aliens.formRec.midbottom = gameScreen.get_rect().center
 	pygame.draw.rect(gameScreen, RED, aliens.formRec, 1)
 	
 	for alien in aliens.aliens:
@@ -141,15 +124,51 @@ def paintWorld():
 	
 	screen.blit(gameScreen, VIEWPORT.topleft)
 
+
+	# paint DEBUG window	
+	log.paint()
+	
+	
+def drawScoreBoard():
+	# scoreBoard
+	if scoreBoard.changed:
+		log.message('scoreBoard changed')
+		scoreBoardRect = scoreBoard.surface.get_rect()
+		pygame.draw.rect(scoreBoard.surface, GREEN, scoreBoardRect, 1)
+		
+		textSurface = font.render('HIGH SCORE', True, RED)
+		textRect = textSurface.get_rect()
+		textRect.midtop = scoreBoardRect.midtop
+		scoreBoard.surface.blit(textSurface, textRect.topleft)
+
+		textSurface = font.render('{}'.format(scoreBoard.hires), True, WHITE)
+		textRect = textSurface.get_rect()
+		textRect.midbottom = scoreBoardRect.midbottom
+		scoreBoard.surface.blit(textSurface, textRect.topleft)
+
+		textSurface = font.render('1UP', True, RED)
+		textRect = textSurface.get_rect()
+		textRect.topleft = scoreBoardRect.topleft
+		scoreBoard.surface.blit(textSurface, textRect.topleft)
+
+		textSurface = font.render('{}'.format(scoreBoard.score), True, WHITE)
+		textRect = textSurface.get_rect()
+		textRect.bottomleft = scoreBoardRect.bottomleft
+		scoreBoard.surface.blit(textSurface, textRect.topleft)
+		
+		screen.blit(scoreBoard.surface, SCOREBOARD.topleft)
+		scoreBoard.changed = False
+
+	
+def drawStatusBar():
 	# statusBar
-	statusBar = world['statusBar']
 	if statusBar.changed:
 		log.message('statusBar changed')
-		statusBar.surface.fill(BLUE)
+		pygame.draw.rect(statusBar.surface, BLUE, statusBar.surface.get_rect(), 1)
 		
 		for i in range(ship.lives - 1):
-			shipForm.topleft = (SHIPSIZE * 1.5 * i + SHIPSIZE // 2, 0)
-			pygame.draw.rect(statusBar.surface, ship.colour, shipForm, 0)
+			ship.shape.topleft = (SHIPSIZE * 1.5 * i + SHIPSIZE // 2, 0)
+			pygame.draw.rect(statusBar.surface, ship.colour, ship.shape, 0)
 			
 		textSurface = font.render('Stage {}'.format(statusBar.stage), True, WHITE)
 		textRect = textSurface.get_rect()
@@ -157,16 +176,11 @@ def paintWorld():
 		statusBar.surface.blit(textSurface, textPos)
 		
 		screen.blit(statusBar.surface, STATUSBAR.topleft)
-		statusBar.changed = False
+		statusBar.changed = False	
 
-	
-	log.paint()
-	
-	
-	
 
 class Debug(object):
-	global screen
+	#global screen
 	
 	def __init__(self):
 		if DEBUG:

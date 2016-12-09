@@ -44,7 +44,11 @@ class AlienCollection(object):
 		self.formRec.midbottom = (VIEWWIDTH // 2, VIEWHEIGHT // 2)
 		self.formation = {(r, c): (self.formRec.left + ALIENSIZE * c * 1.5 , self.formRec.top + ALIENSIZE * r * 1.5) for r in range(5) for c in range(10) }
 		
+		self.state = FORMING
+		
 		self.aliens = []
+		self.bolts = []
+		
 
 	def addAlien(self, alien):
 		self.aliens.append(alien)
@@ -52,9 +56,15 @@ class AlienCollection(object):
 	def removeAlien(self, alien):
 		self.aliens.remove(alien)
 		
-	def shuffleMovement(self):
-		'''move the positions one by one like an ebb/tide/flow movement...'''
-		pass
+	def moveFormation(self):
+		if self.state == FORMATION_DONE :
+			# expanding/contracting
+			pass
+		elif self.state == FORMING:
+			# ebb/flow/tide
+			pass
+		else:
+			pass
 
 
 class Bolt(object):
@@ -79,7 +89,8 @@ class Ship(object):
 		
 		# shape -- placeholder
 		self.colour = WHITE
-
+		self.shape = Rect(0, 0, SHIPSIZE, SHIPSIZE)
+		self.shape.center = self.pos
 		
 		# nr of bolts
 		self.bolts = []

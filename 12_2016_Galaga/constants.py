@@ -17,15 +17,18 @@ VIEWHEIGHT = 600
 VIEWPORT = Rect(0, 0, VIEWWIDTH, VIEWHEIGHT)
 VIEWPORT.center = CENTER
 
-SHIPSIZE = VIEWWIDTH // 20
+ALIENSIZE = VIEWWIDTH // 20
+SHIPSIZE = int(ALIENSIZE * 1.2) 
+
 SHIPY = VIEWHEIGHT - SHIPSIZE
 VIEWBOUNDS = (SHIPSIZE // 2, VIEWWIDTH - SHIPSIZE // 2) # the bounds within which the ship can move
 
-SHIPSPEED = 500. #pixels per second
+SHIPSPEED = 200. # in pixels per second, how fast the backdrop moves
+MOVESPEED = 500. # for the ship moving sideways
 
 BOLTLENGTH = SHIPSIZE // 2
 BOLTWIDTH = 3
-BOLTSPEED = 300. # pixels per second
+BOLTSPEED = 500. # pixels per second
 
 SCOREBOARD = Rect(0, 0, VIEWWIDTH, SHIPSIZE)
 SCOREBOARD.midbottom = VIEWPORT.midtop
@@ -52,21 +55,26 @@ FIRE_KEYS = [K_SPACE, K_j, K_UP]
 # Colours
 WHITE  = (255, 255, 255)
 BLACK  = (  0,   0,   0)
-GREY   = ( 64,  64,  64)
+#GREY   = ( 64,  64,  64)
 RED    = (255,   0,   0)
 GREEN  = (  0, 255,   0)
 BLUE   = (  0,   0, 255)
 PURPLE = (255,   0, 255)
 YELLOW = (255, 255,   0)
 
-# Alien Type
-GALAGA    = 0
-BEE	   	  = 1
-BUTTERFLY = 2
+GREYS = [(256 / 6 * i, 256 / 6 * i, 256 / 6 * i) for i in range(1, 6)]
 
-ALIENSIZE = SHIPSIZE
+# Alien Type
+GALAGA    = 1
+BEE	   	  = 2
+BUTTERFLY = 3
+
+
 
 
 # States
-MOVING = 0
-STATIC = 1
+MOVING = 1
+STATIC = 2
+
+FORMING        = 3
+FORMATION_DONE = 4 

@@ -2,14 +2,26 @@ import pygame
 import random
 
 from constants import *
-
+from vector2 import Vector2
 
 
 # background, with stars, moving or static
 class Backdrop(object):
 	def __init__(self):
-		self.state = STATIC
-		self.stars = {x: ((random.randint(0, VIEWWIDTH), random.randint(0, VIEWHEIGHT)), GREY) for x in range(NR_OF_STARS)}
+		self.state = MOVING
+		'''to do: put in a blinking aspect... pulsing different shades of grey maybe?'''
+		self.stars = {x: {'pos': Vector2(random.randint(0, VIEWWIDTH), random.randint(0, VIEWHEIGHT)),
+						  'colour': random.choice(GREYS),
+						  'speed': Vector2(0, random.randint(SHIPSPEED // 4, SHIPSPEED)) } 
+						 for x in range(NR_OF_STARS)}
+		
+	def moveStars(self, timePassed):
+		if self.state == MOVING:
+			for n in self.stars:
+				newpos = self.stars[n]['pos'] + self.stars[n]['speed'] * timePassed
+				if newpos.y > VIEWHEIGHT:
+					newpos.y -= VIEWHEIGHT
+				self.stars[n]['pos'] = Vector2(int(newpos.x + .99), int(newpos.y + .99))
 
 
 class ScoreBoard(object):
