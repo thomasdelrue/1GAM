@@ -12,9 +12,19 @@ class Backdrop(object):
 		self.stars = {x: ((random.randint(0, VIEWWIDTH), random.randint(0, VIEWHEIGHT)), GREY) for x in range(NR_OF_STARS)}
 
 
-class Scoreboard(object):
+class ScoreBoard(object):
 	def __init__(self):
-		pass
+		self.surface = pygame.Surface((VIEWWIDTH, SHIPSIZE))
+		self.score = 0
+		self.hires = 20000
+		self.changed = True
+		
+	def addScore(points):
+		self.score += points
+		self.changed = True
+		if self.hires < self.score:
+			self.hires = self.score		
+		
 
 
 class StatusBar(object):

@@ -1,6 +1,7 @@
-
 from constants import *
 from pygame import Rect
+
+
 
 
 '''
@@ -19,13 +20,41 @@ entrance it's 'destination point' in the formation...
 '''
 
 class Alien(object):
-	def __init__(self):
-		pass
-		# type
-		# lives
-		# position
-		# shape
+	def __init__(self, alienType, currentPos, formPos):
+		self.alienType = alienType
+		self.currentPos = currentPos
+		self.formPos = formPos
+		if self.alienType == GALAGA:
+			self.lives = 2
+			self.colour = BLUE
+		else:
+			self.lives = 1
+			if self.alienType == BEE:
+				self.colour = YELLOW
+			elif self.alienType == BUTTERFLY:
+				self.colour = RED
+		self.shape = Rect(0, 0, ALIENSIZE, ALIENSIZE)
+		self.shape.topleft = self.currentPos
+		
 
+
+class AlienCollection(object):
+	def __init__(self):
+		self.formRec = Rect(0, 0, (ALIENSIZE * 1.5) * 9 + ALIENSIZE, (ALIENSIZE * 1.5) * 4 + ALIENSIZE)
+		self.formRec.midbottom = (VIEWWIDTH // 2, VIEWHEIGHT // 2)
+		self.formation = {(r, c): (self.formRec.left + ALIENSIZE * c * 1.5 , self.formRec.top + ALIENSIZE * r * 1.5) for r in range(5) for c in range(10) }
+		
+		self.aliens = []
+
+	def addAlien(self, alien):
+		self.aliens.append(alien)
+		
+	def removeAlien(self, alien):
+		self.aliens.remove(alien)
+		
+	def shuffleMovement(self):
+		'''move the positions one by one like an ebb/tide/flow movement...'''
+		pass
 
 
 class Bolt(object):
@@ -35,8 +64,8 @@ class Bolt(object):
 		self.shape = Rect(0, 0, BOLTWIDTH, BOLTLENGTH)
 		self.shape.center = self.pos		
 		
-	def move(self):
-		self.pos = self.pos[0], self.pos[1] - BOLTSPEED
+	def move(self, timePassed):
+		self.pos = self.pos[0], self.pos[1] - BOLTSPEED * timePassed
 		self.shape.center = self.pos		
 
 		
@@ -65,6 +94,9 @@ class Ship(object):
 		if len(self.bolts) >= 2:
 			return
 		self.bolts.append(Bolt(self.pos))
+
+	def removeBolt(self, bolt):
+		self.bolts.remove(bolt)
 
 	def update(self):
 		for bolt in self.bolts:

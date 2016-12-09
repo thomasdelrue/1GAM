@@ -4,9 +4,10 @@ from pygame.locals import *
 
 
 DEBUG = True
+FPS = 60
+
 
 SCREENSIZE = (1024, 768)
-
 CENTER = (SCREENSIZE[0] // 2, SCREENSIZE[1] // 2)
 
 ''' viewspace TBD '''
@@ -19,11 +20,12 @@ VIEWPORT.center = CENTER
 SHIPSIZE = VIEWWIDTH // 20
 SHIPY = VIEWHEIGHT - SHIPSIZE
 VIEWBOUNDS = (SHIPSIZE // 2, VIEWWIDTH - SHIPSIZE // 2) # the bounds within which the ship can move
-MOVESTEP = SHIPSIZE // 5
+
+SHIPSPEED = 500. #pixels per second
 
 BOLTLENGTH = SHIPSIZE // 2
 BOLTWIDTH = 3
-BOLTSPEED = MOVESTEP
+BOLTSPEED = 300. # pixels per second
 
 SCOREBOARD = Rect(0, 0, VIEWWIDTH, SHIPSIZE)
 SCOREBOARD.midbottom = VIEWPORT.midtop
@@ -55,7 +57,14 @@ RED    = (255,   0,   0)
 GREEN  = (  0, 255,   0)
 BLUE   = (  0,   0, 255)
 PURPLE = (255,   0, 255)
+YELLOW = (255, 255,   0)
 
+# Alien Type
+GALAGA    = 0
+BEE	   	  = 1
+BUTTERFLY = 2
+
+ALIENSIZE = SHIPSIZE
 
 
 # States
