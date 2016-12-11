@@ -1,6 +1,9 @@
-from constants import *
-from pygame import Rect
+import random
+import vector2
 
+from constants import *
+from vector2 import Vector2 
+from pygame import Rect
 
 
 
@@ -20,10 +23,12 @@ entrance it's 'destination point' in the formation...
 '''
 
 class Alien(object):
-	def __init__(self, alienType, currentPos, formPos):
+	def __init__(self, alienType, currentPos, formPos, state=None):
 		self.alienType = alienType
 		self.currentPos = currentPos
 		self.formPos = formPos
+		self.state = state
+		self.trajectory = None
 		if self.alienType == GALAGA:
 			self.lives = 2
 			self.colour = BLUE
@@ -36,7 +41,25 @@ class Alien(object):
 		self.shape = Rect(0, 0, ALIENSIZE, ALIENSIZE)
 		self.shape.topleft = self.currentPos
 		
-
+	def getTrajectory(self):
+		# to do
+		p0 = Vector2(*self.currentPos)
+		p1 = Vector2(random.randint(0, 600), random.randint(0, 300))
+		p2 = Vector2(random.randint(0, 600), random.randint(0, 300))
+		self.trajectory = vector2.bezier2(p0, p1, p2)
+	
+	def move(self):
+		if self.state == IN_FORMATION:
+			# movement calculated in Formation
+			pass
+		else:
+			if len(self.trajectory) > 0:
+				self.currentPos = self.trajectory.pop(0)
+				print('alien currentPost', self.currentPos)
+				self.shape.topleft = tuple(self.currentPos)
+			else:
+				self.getTrajectory()
+				self.move()
 
 class AlienCollection(object):
 	def __init__(self):
@@ -49,6 +72,10 @@ class AlienCollection(object):
 		self.aliens = []
 		self.bolts = []
 		
+		self.step = 4
+		self.directionStep = +1
+		self.speedStep = .5
+		self.timeSpent = .0
 
 	def addAlien(self, alien):
 		self.aliens.append(alien)
@@ -56,13 +83,25 @@ class AlienCollection(object):
 	def removeAlien(self, alien):
 		self.aliens.remove(alien)
 		
-	def moveFormation(self):
+	def moveFormation(self, timePassed):
 		if self.state == FORMATION_DONE :
 			# expanding/contracting
 			pass
 		elif self.state == FORMING:
-			# ebb/flow/tide
-			pass
+			# ebb/flow/tide -- 8 stappen naar de ene kant, 8 naar de andere
+			self.timeSpent += timePassed
+			if self.timeSpent > self.speedStep:
+				self.timeSpent -= self.speedStep
+				self.step += 1
+				
+				self.formRec.left += self.directionStep * 10
+				print('xbounds Rec, step {}: {} - {}'.format(self.step, self.formRec.left, self.formRec.right))
+				for k in self.formation:
+					self.formation[k] = self.formation[k][0] + self.directionStep * 10, self.formation[k][1]
+				
+				if self.step >= 8:
+					self.step = 0
+					self.directionStep *= -1
 		else:
 			pass
 
@@ -83,6 +122,7 @@ class Bolt(object):
 class Ship(object):
 	def __init__(self):
 		self.lives = 3
+		self.state = MOVING
 		
 		# position
 		self.pos = (VIEWWIDTH // 2, SHIPY)

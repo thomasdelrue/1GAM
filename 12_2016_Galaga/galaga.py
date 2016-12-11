@@ -39,9 +39,13 @@ def mainGame():
 	gameScreen = pygame.Surface((VIEWWIDTH, VIEWHEIGHT))
 	
 	
-	for i in range(5):
+	'''for i in range(5):
 		for j in range(10):
-			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j)))
+			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j)))'''
+	alien = Alien(BEE, (0, 0), (3, 10))
+	alien.getTrajectory()
+	aliens.addAlien(alien)
+	
 	
 	movex = 0
 	
@@ -55,13 +59,16 @@ def mainGame():
 			if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 				pygame.quit()
 				sys.exit()
-			if event.type == KEYDOWN:
-				if event.key in LEFT_KEYS:
-					movex -= 1
-				if event.key in RIGHT_KEYS:
-					movex += 1
-				if event.key in FIRE_KEYS:
-					ship.fireBolt()
+			''' to do: change the key event handling with key.get_pressed()
+				for a more intuitive right feel '''
+			if ship.state != DEAD:
+				if event.type == KEYDOWN:
+					if event.key in LEFT_KEYS:
+						movex -= 1
+					if event.key in RIGHT_KEYS:
+						movex += 1
+					if event.key in FIRE_KEYS:
+						ship.fireBolt()
 			if event.type == KEYUP:
 				if event.key in LEFT_KEYS:
 					movex = 0
@@ -81,7 +88,13 @@ def mainGame():
 		for bolt in ship.bolts:
 			bolt.move(timePassed)
 
-		aliens.moveFormation()
+		aliens.moveFormation(timePassed)
+		for alien in aliens.aliens:
+			if alien.state == IN_FORMATION:
+				alien.currentPos = aliens.formation[alien.formPos]
+				alien.shape.topleft = alien.currentPos
+			else:
+				alien.move()
 
 		# check for collisions?
 		for bolt in ship.bolts:
