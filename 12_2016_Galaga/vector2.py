@@ -20,6 +20,33 @@ class Vector2(object):
 	
 	def __sub__(self, other):
 		return Vector2(self.x - other.x, self.y - other.y)
+	
+	@staticmethod
+	def from_points(p1, p2):
+		return Vector2(p2[0] - p1[0], p2[1] - p1[1])
+	
+	def get_magnitude(self):
+		return math.sqrt(self.x ** 2 + self.y ** 2)
+	
+	def normalize(self):
+		magnitude = self.get_magnitude()
+		self.x /= magnitude
+		self.y /= magnitude
+		
+	@staticmethod
+	def getAngle(va, vb):
+		dot = va.x * vb.x + va.y * vb.y
+		vam = va.get_magnitude()
+		vbm = vb.get_magnitude()
+		if vam == 0:
+			vam = 1
+		if vbm == 0:
+			vbm = 1
+		cosa = dot / vam / vbm
+		res = math.acos(cosa) * 180 / math.pi
+		if va.x == 0 and vb.x < 0:
+			res = 360 - res
+		return res
 
 
 ''' implemented bezier quadratic curve

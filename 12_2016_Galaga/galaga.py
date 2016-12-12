@@ -39,12 +39,14 @@ def mainGame():
 	gameScreen = pygame.Surface((VIEWWIDTH, VIEWHEIGHT))
 	
 	
-	'''for i in range(5):
+	for i in range(5):
 		for j in range(10):
-			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j)))'''
-	alien = Alien(BEE, (0, 0), (3, 10))
+			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j), IN_FORMATION))
+	'''aliens.state = FORMATION_DONE
+	aliens.step = 0'''
+	'''alien = Alien(BEE, (0, 0), (3, 10))
 	alien.getTrajectory()
-	aliens.addAlien(alien)
+	aliens.addAlien(alien)'''
 	
 	
 	movex = 0
@@ -98,11 +100,14 @@ def mainGame():
 
 		# check for collisions?
 		for bolt in ship.bolts:
+			toRemove = False
 			for alien in aliens.aliens:
 				if bolt.shape.colliderect(alien.shape):
 					log.message('HIT!!')
 					aliens.removeAlien(alien)
-					ship.removeBolt(bolt)
+					toRemove = True
+			if toRemove:
+				ship.removeBolt(bolt)
 		
 		# paint the new world
 		paintWorld()		
@@ -147,7 +152,7 @@ def drawScoreBoard():
 	if scoreBoard.changed:
 		log.message('scoreBoard changed')
 		scoreBoardRect = scoreBoard.surface.get_rect()
-		pygame.draw.rect(scoreBoard.surface, GREEN, scoreBoardRect, 1)
+		#pygame.draw.rect(scoreBoard.surface, GREEN, scoreBoardRect, 1)
 		
 		textSurface = font.render('HIGH SCORE', True, RED)
 		textRect = textSurface.get_rect()
@@ -177,7 +182,7 @@ def drawStatusBar():
 	# statusBar
 	if statusBar.changed:
 		log.message('statusBar changed')
-		pygame.draw.rect(statusBar.surface, BLUE, statusBar.surface.get_rect(), 1)
+		#pygame.draw.rect(statusBar.surface, BLUE, statusBar.surface.get_rect(), 1)
 		
 		for i in range(ship.lives - 1):
 			ship.shape.topleft = (SHIPSIZE * 1.5 * i + SHIPSIZE // 2, 0)

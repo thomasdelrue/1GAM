@@ -28,7 +28,7 @@ class Alien(object):
 		self.currentPos = currentPos
 		self.formPos = formPos
 		self.state = state
-		self.trajectory = None
+		self.trajectory = []
 		if self.alienType == GALAGA:
 			self.lives = 2
 			self.colour = BLUE
@@ -84,10 +84,29 @@ class AlienCollection(object):
 		self.aliens.remove(alien)
 		
 	def moveFormation(self, timePassed):
-		if self.state == FORMATION_DONE :
+		if self.state == FORMATION_DONE:
 			# expanding/contracting
-			pass
-		elif self.state == FORMING:
+			self.timeSpent += timePassed
+			if self.timeSpent > self.speedStep:
+				self.timeSpent -= self.speedStep
+				self.step += 1
+				
+				self.formRec.left -= self.directionStep * 9
+				self.formRec.width += self.directionStep * 18
+				
+				margin = (self.formRec.width - ALIENSIZE * 10) // 9
+				for k in self.formation:
+					if not k[0] == 0:
+						if k[0] == 1:
+							print()
+						self.formation[k] = self.formRec.left + (ALIENSIZE + margin) * k[1], self.formation[k][1]
+						
+				if self.step >= 8:
+					self.step = 0
+					self.directionStep *= -1
+
+
+		elif self.state == FORMING or (self.state == FORMATION_DONE and self.step != 4):
 			# ebb/flow/tide -- 8 stappen naar de ene kant, 8 naar de andere
 			self.timeSpent += timePassed
 			if self.timeSpent > self.speedStep:
