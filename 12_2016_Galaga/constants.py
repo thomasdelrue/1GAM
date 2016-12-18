@@ -81,3 +81,13 @@ FORMATION_DONE = 4
 
 IN_FORMATION = 5
 DEAD = 6
+
+ENTERING = 7 
+
+# Bezier curve datasets
+CURVE1_FROM_MIDTOPR = 0
+CURVE1_FROM_MIDTOPL = 1
+
+BEZ_CP_SETS = [[(300, -50), (400, 125), (-50, 200), (50, 350), (100, 400), (226, 400)],
+               [(200, -50), (100, 125), (550, 200), (450, 350),(400, 400), (274, 400)]
+              ]

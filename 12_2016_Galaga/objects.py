@@ -3,6 +3,7 @@ import vector2
 
 from constants import *
 from vector2 import Vector2 
+from bezier import *
 from pygame import Rect
 
 
@@ -23,7 +24,7 @@ entrance it's 'destination point' in the formation...
 '''
 
 class Alien(object):
-	def __init__(self, alienType, currentPos, formPos, state=None):
+	def __init__(self, alienType, currentPos, formPos, state=ENTERING):
 		self.alienType = alienType
 		self.currentPos = currentPos
 		self.formPos = formPos
@@ -41,31 +42,39 @@ class Alien(object):
 		self.shape = Rect(0, 0, ALIENSIZE, ALIENSIZE)
 		self.shape.topleft = self.currentPos
 		
-	def getTrajectory(self):
+	def getTrajectory(self, typeOfTrajectory):
 		# to do
-		p0 = Vector2(*self.currentPos)
+		'''p0 = Vector2(*self.currentPos)
 		p1 = Vector2(random.randint(0, 600), random.randint(0, 300))
 		p2 = Vector2(random.randint(0, 600), random.randint(0, 300))
-		self.trajectory = vector2.bezier2(p0, p1, p2)
+		#p3 = Vector2(random.randint(0, 600), random.randint(0, 300))'''
+		cp = BEZ_CP_SETS[typeOfTrajectory]
+
+		'''TO DO: calculate the actual destination point for formPos, instead of the current one, since the formation shifts...'''
+		cp.append(self.formation.formationCoord[self.formPos])
+		path = BezierPath(cp)
+		print(path.controlPoints)
+		self.trajectory = path.getDrawingPoints()
 	
 	def move(self):
 		if self.state == IN_FORMATION:
 			# movement calculated in Formation
 			pass
-		else:
+		elif self.state == ENTERING:
 			if len(self.trajectory) > 0:
 				self.currentPos = self.trajectory.pop(0)
 				print('alien currentPost', self.currentPos)
-				self.shape.topleft = tuple(self.currentPos)
+				self.shape.center = tuple(self.currentPos)
 			else:
-				self.getTrajectory()
-				self.move()
+				self.state = IN_FORMATION
+				
+
 
 class AlienCollection(object):
 	def __init__(self):
 		self.formRec = Rect(0, 0, (ALIENSIZE * 1.5) * 9 + ALIENSIZE, (ALIENSIZE * 1.5) * 4 + ALIENSIZE)
 		self.formRec.midbottom = (VIEWWIDTH // 2, VIEWHEIGHT // 2)
-		self.formation = {(r, c): (self.formRec.left + ALIENSIZE * c * 1.5 , self.formRec.top + ALIENSIZE * r * 1.5) for r in range(5) for c in range(10) }
+		self.formationCoord = {(r, c): (int(self.formRec.left + ALIENSIZE * c * 1.5 + ALIENSIZE // 2), int(self.formRec.top + ALIENSIZE * r * 1.5 + ALIENSIZE // 2)) for r in range(5) for c in range(10) }
 		
 		self.state = FORMING
 		
@@ -79,8 +88,10 @@ class AlienCollection(object):
 
 	def addAlien(self, alien):
 		self.aliens.append(alien)
+		alien.formation = self
 		
 	def removeAlien(self, alien):
+		alien.formation = None
 		self.aliens.remove(alien)
 		
 	def moveFormation(self, timePassed):
@@ -95,11 +106,11 @@ class AlienCollection(object):
 				self.formRec.width += self.directionStep * 18
 				
 				margin = (self.formRec.width - ALIENSIZE * 10) // 9
-				for k in self.formation:
+				for k in self.formationCoord:
 					if not k[0] == 0:
 						if k[0] == 1:
 							print()
-						self.formation[k] = self.formRec.left + (ALIENSIZE + margin) * k[1], self.formation[k][1]
+						self.formationCoord[k] = self.formRec.left + (ALIENSIZE + margin) * k[1], self.formationCoord[k][1]
 						
 				if self.step >= 8:
 					self.step = 0
@@ -115,8 +126,8 @@ class AlienCollection(object):
 				
 				self.formRec.left += self.directionStep * 10
 				print('xbounds Rec, step {}: {} - {}'.format(self.step, self.formRec.left, self.formRec.right))
-				for k in self.formation:
-					self.formation[k] = self.formation[k][0] + self.directionStep * 10, self.formation[k][1]
+				for k in self.formationCoord:
+					self.formationCoord[k] = self.formationCoord[k][0] + self.directionStep * 10, self.formationCoord[k][1]
 				
 				if self.step >= 8:
 					self.step = 0

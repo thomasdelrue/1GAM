@@ -39,14 +39,14 @@ def mainGame():
 	gameScreen = pygame.Surface((VIEWWIDTH, VIEWHEIGHT))
 	
 	
-	for i in range(5):
+	'''for i in range(5):
 		for j in range(10):
-			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j), IN_FORMATION))
+			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j), IN_FORMATION))'''
 	'''aliens.state = FORMATION_DONE
 	aliens.step = 0'''
-	'''alien = Alien(BEE, (0, 0), (3, 10))
-	alien.getTrajectory()
-	aliens.addAlien(alien)'''
+	alien = Alien(BEE, (0, 0), (3, 4))
+	aliens.addAlien(alien)
+	alien.getTrajectory(CURVE1_FROM_MIDTOPR)
 	
 	
 	movex = 0
@@ -93,8 +93,8 @@ def mainGame():
 		aliens.moveFormation(timePassed)
 		for alien in aliens.aliens:
 			if alien.state == IN_FORMATION:
-				alien.currentPos = aliens.formation[alien.formPos]
-				alien.shape.topleft = alien.currentPos
+				alien.currentPos = aliens.formationCoord[alien.formPos]
+				alien.shape.center = alien.currentPos
 			else:
 				alien.move()
 
@@ -139,6 +139,10 @@ def paintWorld():
 	
 	for alien in aliens.aliens:
 		pygame.draw.rect(gameScreen, alien.colour, alien.shape, 0)
+	
+	for coord in aliens.formationCoord:
+		print(aliens.formationCoord[coord])
+		gameScreen.set_at(aliens.formationCoord[coord], RED)
 	
 	screen.blit(gameScreen, VIEWPORT.topleft)
 
