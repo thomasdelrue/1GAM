@@ -1,10 +1,11 @@
 import random
+import pygame
 import vector2
 
 from constants import *
 from vector2 import Vector2 
 from bezier import *
-from pygame import Rect
+from pygame import Rect, Surface
 
 
 
@@ -23,13 +24,22 @@ having these coordinates, then it's easy to assign an alien that makes it's
 entrance it's 'destination point' in the formation...
 '''
 
-class Alien(object):
+class Alien(pygame.sprite.Sprite):
 	def __init__(self, alienType, currentPos, formPos, state=ENTERING):
+		pygame.sprite.Sprite.__init__(self)
+		
 		self.alienType = alienType
+		# current position on screen
 		self.currentPos = currentPos
+		# the previous position
+		self.prevPos = currentPos
+		# designated spot in the formation 
 		self.formPos = formPos
 		self.state = state
 		self.trajectory = []
+		# orientation
+		self.heading = 0
+		
 		if self.alienType == GALAGA:
 			self.lives = 2
 			self.colour = BLUE
@@ -39,37 +49,58 @@ class Alien(object):
 				self.colour = YELLOW
 			elif self.alienType == BUTTERFLY:
 				self.colour = RED
-		self.shape = Rect(0, 0, ALIENSIZE, ALIENSIZE)
-		self.shape.topleft = self.currentPos
 		
-	def getTrajectory(self, typeOfTrajectory):
+		# to do: use the Sprite class for the shape 
+		#self.shape = Rect(0, 0, ALIENSIZE, ALIENSIZE)
+		self.origShape = Surface((ALIENSIZE, ALIENSIZE))
+		#self.shape.fill(self.colour)
+		pygame.draw.rect(self.origShape, self.colour, (1, 1, ALIENSIZE - 1, ALIENSIZE - 1), 0)
+		self.shape = self.origShape
+		self.rect = self.shape.get_rect()
+		#self.shape.center = self.currentPos
+		self.rect.center = self.currentPos
+		
+		
+	def getTrajectory(self, typeOfTrajectory, timePassed):
 		# to do
-		'''p0 = Vector2(*self.currentPos)
-		p1 = Vector2(random.randint(0, 600), random.randint(0, 300))
-		p2 = Vector2(random.randint(0, 600), random.randint(0, 300))
-		#p3 = Vector2(random.randint(0, 600), random.randint(0, 300))'''
 		cp = BEZ_CP_SETS[typeOfTrajectory]
 
 		'''TO DO: calculate the actual destination point for formPos, instead of the current one, since the formation shifts...'''
 		cp.append(self.formation.formationCoord[self.formPos])
 		path = BezierPath(cp)
+		#path.getLength()
 		print(path.controlPoints)
-		self.trajectory = path.getDrawingPoints()
+		self.trajectory = path.getDrawingPoints(timePassed)
+		
 	
 	def move(self):
 		if self.state == IN_FORMATION:
 			# movement calculated in Formation
+			
+			if self.heading != 0:
+				self.getHeading()
+			
 			pass
 		elif self.state == ENTERING:
 			if len(self.trajectory) > 0:
+				self.oldPos = self.currentPos
 				self.currentPos = self.trajectory.pop(0)
+				
+				self.getHeading()
+				
 				print('alien currentPost', self.currentPos)
-				self.shape.center = tuple(self.currentPos)
+				#self.shape.center = tuple(self.currentPos)
+				self.rect.center = tuple(self.currentPos)
 			else:
 				self.state = IN_FORMATION
 				
+	def getHeading(self):
+		self.heading += 5
+		self.shape = pygame.transform.rotate(self.origShape, self.heading)
+		self.rect = self.shape.get_rect()
+				
 
-
+# maybe make this a pygame.sprite.Group ?
 class AlienCollection(object):
 	def __init__(self):
 		self.formRec = Rect(0, 0, (ALIENSIZE * 1.5) * 9 + ALIENSIZE, (ALIENSIZE * 1.5) * 4 + ALIENSIZE)

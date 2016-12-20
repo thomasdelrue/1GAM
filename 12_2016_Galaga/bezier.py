@@ -12,6 +12,9 @@ TO DO:
 - calculate the angle between points accurately, for rotating the alien 
 
 '''
+from constants import FPS, ALIENSPEED
+
+
 def bezier2(p0, p1, p2):
     bez_points = []
 
@@ -41,7 +44,7 @@ def findDrawingPoints(p0, p1, p2, p3, t0, t1, insertionIndex, pointList):
 
     a = (lp0 - lp1).get_magnitude()
     print(a)
-    if a < 0.01:
+    if a <= 1:
         return 0
     
     pMid = calculateBezierPoint(p0, p1, p2, p3, tMid)
@@ -50,20 +53,12 @@ def findDrawingPoints(p0, p1, p2, p3, t0, t1, insertionIndex, pointList):
     rightDirection = (lp1 - pMid) 
     rightDirection.normalize()
     
-    print('3v', lp0, lp1, pMid)
-    print('l', leftDirection)
-    print('r', rightDirection)
-    
-    print(dot(leftDirection, rightDirection))
-    dotP = dot(leftDirection, rightDirection)
-    if dotP > -0.99 or abs(tMid - .5) < .0001:
+    print(Vector2.dot(leftDirection, rightDirection))
+    dotP = Vector2.dot(leftDirection, rightDirection)
+    if dotP > -0.99:
         pointsAdded = 0
-        
         pointsAdded += findDrawingPoints(p0, p1, p2, p3, t0, tMid, insertionIndex, pointList)
         
-        print('pointList=', pointList)
-        print('pMid=', pMid)
-        print('insertionIndex={} pointsAdded={}'.format(insertionIndex, pointsAdded))
         pointList.insert(len(pointList) - (insertionIndex + pointsAdded), pMid)
         pointsAdded += findDrawingPoints(p0, p1, p2, p3, tMid, t1, insertionIndex + pointsAdded, pointList)
         
@@ -86,21 +81,42 @@ def findPoints(p0, p1, p2, p3):
 
 
 class BezierPath(object):
-    '''eerst drawing points, dan lengte, dan grootte segment berekenen op basis snelheid, dan de echte te tekenen punten berekenen...'''
+
     def __init__(self, vs):
         self.controlPoints = []
         self.controlPoints = [Vector2(*t) for t in vs]
+
+
+    def getLength(self, p0, p1, p2, p3):
+        length_bezier = 0
+        points = findPoints(p0, p1, p2, p3)
         
-    def getDrawingPoints(self):
+        m0 = points[0]
+        for m1 in points[1:]:
+            length_bezier += (m1 - m0).get_magnitude()
+            m0 = m1
+            
+        print('length bezier curve: {}'.format(length_bezier))
+        return length_bezier
+        
+        
+    def getDrawingPoints(self, timePassed):
         drawingPoints = []
         
-        SEGMENTS_PER_CURVE = 30
+        '''determine length per bezier curve, and so determine segments per curve ...'''
+        ''' TBD if calculating segments per curve is actually a good idea, instead of
+        calculating the segments for the entire path... possibly jerky movement?'''
+        #SEGMENTS_PER_CURVE = 30
         
         for i in range(0, len(self.controlPoints) - 3, 3):
             p0 = self.controlPoints[i]
             p1 = self.controlPoints[i + 1]
             p2 = self.controlPoints[i + 2]
             p3 = self.controlPoints[i + 3]
+            
+            curveLength = self.getLength(p0, p1, p2, p3)
+            speed = ALIENSPEED * timePassed
+            SEGMENTS_PER_CURVE = int(curveLength / speed) 
             
             if i == 0:
                 drawingPoints.append(calculateBezierPoint(p0, p1, p2, p3, 0))

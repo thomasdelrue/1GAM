@@ -26,7 +26,6 @@ def mainGame():
 	clock = pygame.time.Clock()
 	
 	# initialize world and objects
-	#world = {}
 	log = Debug()
 	
 	log.message('start of debug session')
@@ -44,9 +43,17 @@ def mainGame():
 			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j), IN_FORMATION))'''
 	'''aliens.state = FORMATION_DONE
 	aliens.step = 0'''
-	alien = Alien(BEE, (0, 0), (3, 4))
+
+	# move a tick, to set the pace... so we can have a timeframe for the aliens to move
+	timePassed = clock.tick(FPS) / 1000.0
+			
+	alien = Alien(BEE, (0, 0), (4, 4))
 	aliens.addAlien(alien)
-	alien.getTrajectory(CURVE1_FROM_MIDTOPR)
+	alien.getTrajectory(CURVE1_FROM_MIDTOPR, timePassed)
+	
+	alien = Alien(BUTTERFLY, (0, 0), (2, 4))
+	aliens.addAlien(alien)
+	alien.getTrajectory(CURVE1_FROM_MIDTOPL, timePassed)
 	
 	
 	movex = 0
@@ -93,8 +100,11 @@ def mainGame():
 		aliens.moveFormation(timePassed)
 		for alien in aliens.aliens:
 			if alien.state == IN_FORMATION:
+				if alien.heading % 360:
+					alien.getHeading()				
 				alien.currentPos = aliens.formationCoord[alien.formPos]
-				alien.shape.center = alien.currentPos
+				alien.rect.center = alien.currentPos
+				#alien.shape.center = alien.currentPos
 			else:
 				alien.move()
 
@@ -102,7 +112,7 @@ def mainGame():
 		for bolt in ship.bolts:
 			toRemove = False
 			for alien in aliens.aliens:
-				if bolt.shape.colliderect(alien.shape):
+				if bolt.shape.colliderect(alien.rect):
 					log.message('HIT!!')
 					aliens.removeAlien(alien)
 					toRemove = True
@@ -138,7 +148,8 @@ def paintWorld():
 	pygame.draw.rect(gameScreen, RED, aliens.formRec, 1)
 	
 	for alien in aliens.aliens:
-		pygame.draw.rect(gameScreen, alien.colour, alien.shape, 0)
+		gameScreen.blit(alien.shape, alien.rect)
+		#pygame.draw.rect(gameScreen, alien.colour, alien.shape, 0)
 	
 	for coord in aliens.formationCoord:
 		print(aliens.formationCoord[coord])
