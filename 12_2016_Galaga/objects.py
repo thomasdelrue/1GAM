@@ -51,13 +51,12 @@ class Alien(pygame.sprite.Sprite):
 				self.colour = RED
 		
 		# to do: use the Sprite class for the shape 
-		#self.shape = Rect(0, 0, ALIENSIZE, ALIENSIZE)
 		self.origShape = Surface((ALIENSIZE, ALIENSIZE))
-		#self.shape.fill(self.colour)
-		pygame.draw.rect(self.origShape, self.colour, (1, 1, ALIENSIZE - 1, ALIENSIZE - 1), 0)
+		'''pygame.draw.rect(self.origShape, self.colour, (1, 1, ALIENSIZE - 1, ALIENSIZE - 1), 0)
+		pygame.draw.circle(self.origShape, BLUE, (5, ALIENSIZE // 2), 3, 0)'''
+		pygame.draw.aalines(self.origShape, self.colour, True, [(1, ALIENSIZE // 2), (ALIENSIZE - 2, 1), (ALIENSIZE - 2, ALIENSIZE - 2)])
 		self.shape = self.origShape
 		self.rect = self.shape.get_rect()
-		#self.shape.center = self.currentPos
 		self.rect.center = self.currentPos
 		
 		
@@ -66,19 +65,19 @@ class Alien(pygame.sprite.Sprite):
 		cp = BEZ_CP_SETS[typeOfTrajectory]
 
 		'''TO DO: calculate the actual destination point for formPos, instead of the current one, since the formation shifts...'''
-		cp.append(self.formation.formationCoord[self.formPos])
+		#cp.append(self.formation.formationCoord[self.formPos])
 		path = BezierPath(cp)
-		#path.getLength()
-		print(path.controlPoints)
+		#print(path.controlPoints)
 		self.trajectory = path.getDrawingPoints(timePassed)
+	
 		
 	
-	def move(self):
+	def move(self, timePassed):
 		if self.state == IN_FORMATION:
 			# movement calculated in Formation
 			
-			if self.heading != 0:
-				self.getHeading()
+			if self.heading != 270:
+				self.setHeading(270)
 			
 			pass
 		elif self.state == ENTERING:
@@ -86,19 +85,36 @@ class Alien(pygame.sprite.Sprite):
 				self.oldPos = self.currentPos
 				self.currentPos = self.trajectory.pop(0)
 				
-				self.getHeading()
+				self.setHeading()
 				
 				print('alien currentPost', self.currentPos)
 				#self.shape.center = tuple(self.currentPos)
-				self.rect.center = tuple(self.currentPos)
+				#self.rect.center = tuple(self.currentPos)
 			else:
-				self.state = IN_FORMATION
+				destPos = Vector2(*self.formation.formationCoord[self.formPos])
+				diff = destPos - Vector2(*self.currentPos) 
+				if diff.get_magnitude() < 10:
+					self.state = IN_FORMATION
+				else:
+					self.oldPos = self.currentPos
+					res = Vector2(*self.currentPos) + diff.normalize() * ALIENSPEED * timePassed
+					self.currentPos = tuple(res) 
 				
-	def getHeading(self):
-		self.heading += 5
+					self.setHeading()
+
+					
+			self.rect.center = tuple(self.currentPos)
+				
+	def setHeading(self, heading=None):
+		if heading is None:
+			self.heading = (Vector2(*self.currentPos) - Vector2(*self.oldPos)).getHeading()
+		else:
+			self.heading = heading
 		self.shape = pygame.transform.rotate(self.origShape, self.heading)
 		self.rect = self.shape.get_rect()
 				
+
+
 
 # maybe make this a pygame.sprite.Group ?
 class AlienCollection(object):
@@ -124,6 +140,42 @@ class AlienCollection(object):
 	def removeAlien(self, alien):
 		alien.formation = None
 		self.aliens.remove(alien)
+		
+	'''
+	alienList: list of tuples: alienType, formPos
+	'''
+	def createSquadron(self, alienList, typeOfTrajectory, timePassed):
+		firstAlien = Alien(alienList[0][0], (0, 0), alienList[0][1])
+		self.addAlien(firstAlien)
+		firstAlien.getTrajectory(typeOfTrajectory, timePassed)
+		
+		refPos = firstAlien.trajectory[0]
+		print('refPos:', refPos)
+		offset = firstAlien.trajectory[1].normalize()
+		print('offset:', offset)
+		nextPos = refPos - offset * ALIENSIZE * 1.5
+		print('nextPos', nextPos)
+		
+		for i in range(1, len(alienList)):
+			nextAlien = Alien(alienList[i][0], (0, 0), alienList[i][1])
+			self.addAlien(nextAlien)
+			nextAlien.getTrajectory(typeOfTrajectory, timePassed)
+			
+			'''
+			hier nog de andere posities aan toevoegen...
+			
+			
+			op basis van firstAlien positie... 
+			genormaliseerde vector in andere richting * afstand (ALIENSIZE * 1.5 * i)?
+			'''
+			startPos = refPos - offset * ALIENSIZE * 1.5 * i
+			distance = (startPos - refPos).get_magnitude()
+			nrSteps = int(distance / (timePassed * ALIENSPEED))
+			extraLeg = bezier1(startPos, refPos, nrSteps)
+			print('extraLeg', extraLeg)
+			nextAlien.trajectory = extraLeg + nextAlien.trajectory
+		
+		
 		
 	def moveFormation(self, timePassed):
 		if self.state == FORMATION_DONE:

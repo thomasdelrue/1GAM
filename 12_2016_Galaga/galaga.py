@@ -47,14 +47,24 @@ def mainGame():
 	# move a tick, to set the pace... so we can have a timeframe for the aliens to move
 	timePassed = clock.tick(FPS) / 1000.0
 			
-	alien = Alien(BEE, (0, 0), (4, 4))
+	'''alien = Alien(BEE, (0, 0), (4, 4))
 	aliens.addAlien(alien)
-	alien.getTrajectory(CURVE1_FROM_MIDTOPR, timePassed)
+	alien.getTrajectory(CURVE1_FROM_MIDTOPR, timePassed)'''
 	
-	alien = Alien(BUTTERFLY, (0, 0), (2, 4))
+	alienList = [(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))]	
+	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPR, timePassed)
+	
+	alienList = [(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))]	
+	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPL, timePassed)
+	
+	'''alien = Alien(BUTTERFLY, (0, 0), (2, 4))
 	aliens.addAlien(alien)
-	alien.getTrajectory(CURVE1_FROM_MIDTOPL, timePassed)
+	alien.getTrajectory(CURVE1_FROM_MIDTOPL, timePassed)'''
 	
+	
+	'''
+	
+	aliens.createSquadron...'''
 	
 	movex = 0
 	
@@ -100,13 +110,12 @@ def mainGame():
 		aliens.moveFormation(timePassed)
 		for alien in aliens.aliens:
 			if alien.state == IN_FORMATION:
-				if alien.heading % 360:
-					alien.getHeading()				
+				if alien.heading != 270:
+					alien.setHeading(270)				
 				alien.currentPos = aliens.formationCoord[alien.formPos]
 				alien.rect.center = alien.currentPos
-				#alien.shape.center = alien.currentPos
 			else:
-				alien.move()
+				alien.move(timePassed)
 
 		# check for collisions?
 		for bolt in ship.bolts:

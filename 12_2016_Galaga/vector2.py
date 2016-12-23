@@ -24,6 +24,9 @@ class Vector2(object):
 	def __sub__(self, other):
 		return Vector2(self.x - other.x, self.y - other.y)
 
+	def getHeading(self):
+		return int(math.degrees(math.atan2(self.y, -self.x))) % 360
+
 	def get_magnitude(self):
 		return math.sqrt(self.x ** 2 + self.y ** 2)
 	
@@ -32,6 +35,7 @@ class Vector2(object):
 		if magnitude:
 			self.x /= magnitude
 			self.y /= magnitude
+		return self
 	
 	@staticmethod
 	def dot(v1, v2):

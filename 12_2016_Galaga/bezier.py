@@ -15,6 +15,20 @@ TO DO:
 from constants import FPS, ALIENSPEED
 
 
+# straight line
+def bezier1(p0, p1, nrSteps):
+    bez_points = []
+
+    for i in range(0, nrSteps):
+        t = i / nrSteps
+        x = (1 - t) * p0.x + t * p1.x
+        y = (1 - t) * p0.y + t * p1.y 
+        bez_points.append(Vector2(int(x), int(y)))
+
+    return bez_points
+
+
+# quadratic curve
 def bezier2(p0, p1, p2):
     bez_points = []
 
@@ -100,6 +114,10 @@ class BezierPath(object):
         return length_bezier
         
         
+    '''TO DO: improve BezierPath to include linear and quadratic curves as well,
+        maybe by using a list of different size tuples? 2-tuple -> linear,
+        3-tuple -> quadratic, and 4-tuple -> cubic?
+    '''
     def getDrawingPoints(self, timePassed):
         drawingPoints = []
         
