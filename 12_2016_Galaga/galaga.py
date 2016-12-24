@@ -11,6 +11,7 @@ import sys
 from constants import *
 from objects import *
 from screen import *
+from playbook import *
 from pygame.locals import *
 
 
@@ -35,6 +36,8 @@ def mainGame():
 	backdrop = Backdrop()
 	statusBar = StatusBar()
 	scoreBoard = ScoreBoard()
+	playbook = Playbook(aliens, statusBar)
+	playbook.log = log
 	gameScreen = pygame.Surface((VIEWWIDTH, VIEWHEIGHT))
 	
 	
@@ -47,24 +50,11 @@ def mainGame():
 	# move a tick, to set the pace... so we can have a timeframe for the aliens to move
 	timePassed = clock.tick(FPS) / 1000.0
 			
-	'''alien = Alien(BEE, (0, 0), (4, 4))
-	aliens.addAlien(alien)
-	alien.getTrajectory(CURVE1_FROM_MIDTOPR, timePassed)'''
-	
-	alienList = [(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))]	
+	'''alienList = [(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))]	
 	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPR, timePassed)
 	
 	alienList = [(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))]	
-	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPL, timePassed)
-	
-	'''alien = Alien(BUTTERFLY, (0, 0), (2, 4))
-	aliens.addAlien(alien)
-	alien.getTrajectory(CURVE1_FROM_MIDTOPL, timePassed)'''
-	
-	
-	'''
-	
-	aliens.createSquadron...'''
+	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPL, timePassed)'''
 	
 	movex = 0
 	
@@ -96,6 +86,8 @@ def mainGame():
 		
 		# update states
 		timePassed = clock.tick(FPS) / 1000.0
+		
+		playbook.check(timePassed)
 
 		backdrop.moveStars(timePassed)
 				
@@ -122,8 +114,9 @@ def mainGame():
 			toRemove = False
 			for alien in aliens.aliens:
 				if bolt.shape.colliderect(alien.rect):
-					log.message('HIT!!')
-					aliens.removeAlien(alien)
+					alien.hit()
+					if not alien.lives: 
+						aliens.removeAlien(alien)
 					toRemove = True
 			if toRemove:
 				ship.removeBolt(bolt)
@@ -154,15 +147,15 @@ def paintWorld():
 	
 	
 	# aliens
-	pygame.draw.rect(gameScreen, RED, aliens.formRec, 1)
+	#pygame.draw.rect(gameScreen, RED, aliens.formRec, 1)
 	
 	for alien in aliens.aliens:
 		gameScreen.blit(alien.shape, alien.rect)
 		#pygame.draw.rect(gameScreen, alien.colour, alien.shape, 0)
 	
-	for coord in aliens.formationCoord:
-		print(aliens.formationCoord[coord])
-		gameScreen.set_at(aliens.formationCoord[coord], RED)
+	'''for coord in aliens.formationCoord:
+		#print(aliens.formationCoord[coord])
+		gameScreen.set_at(aliens.formationCoord[coord], RED)'''
 	
 	screen.blit(gameScreen, VIEWPORT.topleft)
 
@@ -175,6 +168,7 @@ def drawScoreBoard():
 	# scoreBoard
 	if scoreBoard.changed:
 		log.message('scoreBoard changed')
+		scoreBoard.surface.fill(BLACK)
 		scoreBoardRect = scoreBoard.surface.get_rect()
 		#pygame.draw.rect(scoreBoard.surface, GREEN, scoreBoardRect, 1)
 		
@@ -206,6 +200,7 @@ def drawStatusBar():
 	# statusBar
 	if statusBar.changed:
 		log.message('statusBar changed')
+		statusBar.surface.fill(BLACK)
 		#pygame.draw.rect(statusBar.surface, BLUE, statusBar.surface.get_rect(), 1)
 		
 		for i in range(ship.lives - 1):

@@ -20,6 +20,8 @@ VIEWPORT.center = CENTER
 ALIENSIZE = 24 #VIEWWIDTH // 20
 ALIENSPEED = 300.
 
+DISTANCE_BETWEEN = 1.75
+
 SHIPSIZE = int(ALIENSIZE * 1.2) 
 
 SHIPY = VIEWHEIGHT - SHIPSIZE
@@ -89,7 +91,17 @@ ENTERING = 7
 # Bezier curve datasets
 CURVE1_FROM_MIDTOPR = 0
 CURVE1_FROM_MIDTOPL = 1
+CURVE1_FROM_LBOTTOM = 2
+CURVE1_FROM_RBOTTOM = 3
 
-BEZ_CP_SETS = [[(300, -50), (400, 125), (-50, 200), (50, 350), (100, 400), (226, 400), (226, 300)],
-               [(200, -50), (100, 125), (550, 200), (450, 350),(400, 400), (274, 400), (274, 300)]
+BEZ_CP_SETS = [# CURVE1_FROM_MIDTOPR
+               [(300, -50), (400, 125), (-50, 200), (50, 350), (100, 400), (226, 400), (226, 300)],
+               # CURVE1_FROM_MIDTOPL
+               [(200, -50), (100, 125), (550, 200), (450, 350), (400, 400), (274, 400), (274, 300)],
+               # CURVE1_FROM_LBOTTOM
+               [(-50, 500), (175, 525), (200, 410), (200, 300), (200, 180), (50, 180), (50, 300),
+                (50, 420), (200, 420), (200, 250)],
+               # CURVE1_FROM_RBOTTOM
+               [(550, 500), (325, 525), (300, 410), (300, 300), (300, 180), (450, 180), (450, 300),
+                (450, 420), (300, 420), (300, 250)],
               ]

@@ -42,13 +42,14 @@ class Alien(pygame.sprite.Sprite):
 		
 		if self.alienType == GALAGA:
 			self.lives = 2
-			self.colour = BLUE
+			self.colour = GREEN
 		else:
 			self.lives = 1
 			if self.alienType == BEE:
 				self.colour = YELLOW
 			elif self.alienType == BUTTERFLY:
 				self.colour = RED
+
 		
 		# to do: use the Sprite class for the shape 
 		self.origShape = Surface((ALIENSIZE, ALIENSIZE))
@@ -64,12 +65,18 @@ class Alien(pygame.sprite.Sprite):
 		# to do
 		cp = BEZ_CP_SETS[typeOfTrajectory]
 
-		'''TO DO: calculate the actual destination point for formPos, instead of the current one, since the formation shifts...'''
 		#cp.append(self.formation.formationCoord[self.formPos])
 		path = BezierPath(cp)
 		#print(path.controlPoints)
 		self.trajectory = path.getDrawingPoints(timePassed)
 	
+	
+	def hit(self):
+		self.lives -= 1
+		if self.alienType == GALAGA and self.lives == 1:
+			self.colour = BLUE
+			pygame.draw.aalines(self.origShape, self.colour, True, [(1, ALIENSIZE // 2), (ALIENSIZE - 2, 1), (ALIENSIZE - 2, ALIENSIZE - 2)])
+			self.shape = pygame.transform.rotate(self.origShape, self.heading)
 		
 	
 	def move(self, timePassed):
@@ -87,9 +94,7 @@ class Alien(pygame.sprite.Sprite):
 				
 				self.setHeading()
 				
-				print('alien currentPost', self.currentPos)
-				#self.shape.center = tuple(self.currentPos)
-				#self.rect.center = tuple(self.currentPos)
+				#print('alien currentPost', self.currentPos)
 			else:
 				destPos = Vector2(*self.formation.formationCoord[self.formPos])
 				diff = destPos - Vector2(*self.currentPos) 
@@ -99,10 +104,8 @@ class Alien(pygame.sprite.Sprite):
 					self.oldPos = self.currentPos
 					res = Vector2(*self.currentPos) + diff.normalize() * ALIENSPEED * timePassed
 					self.currentPos = tuple(res) 
-				
 					self.setHeading()
 
-					
 			self.rect.center = tuple(self.currentPos)
 				
 	def setHeading(self, heading=None):
@@ -150,29 +153,22 @@ class AlienCollection(object):
 		firstAlien.getTrajectory(typeOfTrajectory, timePassed)
 		
 		refPos = firstAlien.trajectory[0]
-		print('refPos:', refPos)
-		offset = firstAlien.trajectory[1].normalize()
-		print('offset:', offset)
-		nextPos = refPos - offset * ALIENSIZE * 1.5
-		print('nextPos', nextPos)
+		#print('refPos:', refPos)
+		offset = (refPos - firstAlien.trajectory[1]).normalize()
+		#print('offset:', offset)
+		#nextPos = refPos - offset * ALIENSIZE * 1.5
+		#print('nextPos', nextPos)
 		
 		for i in range(1, len(alienList)):
 			nextAlien = Alien(alienList[i][0], (0, 0), alienList[i][1])
 			self.addAlien(nextAlien)
 			nextAlien.getTrajectory(typeOfTrajectory, timePassed)
 			
-			'''
-			hier nog de andere posities aan toevoegen...
-			
-			
-			op basis van firstAlien positie... 
-			genormaliseerde vector in andere richting * afstand (ALIENSIZE * 1.5 * i)?
-			'''
-			startPos = refPos - offset * ALIENSIZE * 1.5 * i
+			startPos = refPos + offset * ALIENSIZE * DISTANCE_BETWEEN * i
 			distance = (startPos - refPos).get_magnitude()
 			nrSteps = int(distance / (timePassed * ALIENSPEED))
 			extraLeg = bezier1(startPos, refPos, nrSteps)
-			print('extraLeg', extraLeg)
+			
 			nextAlien.trajectory = extraLeg + nextAlien.trajectory
 		
 		
@@ -191,8 +187,8 @@ class AlienCollection(object):
 				margin = (self.formRec.width - ALIENSIZE * 10) // 9
 				for k in self.formationCoord:
 					if not k[0] == 0:
-						if k[0] == 1:
-							print()
+						'''if k[0] == 1:
+							print()'''
 						self.formationCoord[k] = self.formRec.left + (ALIENSIZE + margin) * k[1], self.formationCoord[k][1]
 						
 				if self.step >= 8:
@@ -208,7 +204,7 @@ class AlienCollection(object):
 				self.step += 1
 				
 				self.formRec.left += self.directionStep * 10
-				print('xbounds Rec, step {}: {} - {}'.format(self.step, self.formRec.left, self.formRec.right))
+				#print('xbounds Rec, step {}: {} - {}'.format(self.step, self.formRec.left, self.formRec.right))
 				for k in self.formationCoord:
 					self.formationCoord[k] = self.formationCoord[k][0] + self.directionStep * 10, self.formationCoord[k][1]
 				

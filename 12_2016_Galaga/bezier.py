@@ -57,7 +57,6 @@ def findDrawingPoints(p0, p1, p2, p3, t0, t1, insertionIndex, pointList):
     lp1 = calculateBezierPoint(p0, p1, p2, p3, t1)
 
     a = (lp0 - lp1).get_magnitude()
-    print(a)
     if a <= 1:
         return 0
     
@@ -67,7 +66,6 @@ def findDrawingPoints(p0, p1, p2, p3, t0, t1, insertionIndex, pointList):
     rightDirection = (lp1 - pMid) 
     rightDirection.normalize()
     
-    print(Vector2.dot(leftDirection, rightDirection))
     dotP = Vector2.dot(leftDirection, rightDirection)
     if dotP > -0.99:
         pointsAdded = 0
@@ -110,7 +108,7 @@ class BezierPath(object):
             length_bezier += (m1 - m0).get_magnitude()
             m0 = m1
             
-        print('length bezier curve: {}'.format(length_bezier))
+        #print('length bezier curve: {}'.format(length_bezier))
         return length_bezier
         
         
