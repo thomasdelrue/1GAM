@@ -293,7 +293,7 @@ class Bolt(object):
 
 		
 
-class Ship(object):
+class Ship(pygame.sprite.Sprite):
 	def __init__(self):
 		self.lives = 3
 		self.state = MOVING
@@ -303,8 +303,11 @@ class Ship(object):
 		
 		# shape -- placeholder
 		self.colour = WHITE
-		self.shape = Rect(0, 0, SHIPSIZE, SHIPSIZE)
-		self.shape.center = self.pos
+		self.origShape = Surface((SHIPSIZE, SHIPSIZE))
+		self.origShape.fill(WHITE)
+		self.shape = self.origShape.copy()
+		self.rect = self.shape.get_rect()
+		self.rect.center = self.pos
 		
 		# nr of bolts
 		self.bolts = []
@@ -323,11 +326,27 @@ class Ship(object):
 	def removeBolt(self, bolt):
 		self.bolts.remove(bolt)
 
+	def hit(self):
+		self.lives -= 1
+		self.state = DEAD
+		self.frame = 1
+
 	def update(self):
 		for bolt in self.bolts:
 			if bolt.pos[1] - BOLTLENGTH < 0:
 				self.bolts.remove(bolt)
 			
-			
+		if self.state == DEAD:
+			self.shape.fill(BLACK)
+			pygame.draw.circle(self.shape, WHITE, (SHIPSIZE // 2, SHIPSIZE // 2), self.frame, 1)
+			self.frame += 2
+			if self.frame > SHIPSIZE // 2:
+				self.pos = (VIEWWIDTH // 2, SHIPY)
+				if self.lives:
+					self.shape = self.origShape.copy()
+					self.state = MOVING
+				else:
+					self.shape.fill(BLACK)
+					self.state = GAMEOVER
 	
 	

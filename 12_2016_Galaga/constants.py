@@ -77,6 +77,8 @@ BUTTERFLY = 3
 
 
 # States
+GAMEOVER = -1
+
 MOVING = 1
 STATIC = 2
 

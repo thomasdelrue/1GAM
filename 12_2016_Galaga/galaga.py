@@ -112,7 +112,7 @@ def mainGame():
 				sys.exit()
 			''' to do: change the key event handling with key.get_pressed()
 				for a more intuitive right feel '''
-			if ship.state != DEAD:
+			if ship.state not in (DEAD, GAMEOVER):
 				if event.type == KEYDOWN:
 					if event.key in LEFT_KEYS:
 						movex -= 1
@@ -151,13 +151,19 @@ def mainGame():
 				alien.rect.center = alien.currentPos
 			else:
 				alien.move(timePassed)
+				
+			if ship.state == MOVING and alien.state != DEAD:
+				if alien.rect.colliderect(ship.rect):
+					incrementScore += alien.hit()
+					ship.hit()
+					statusBar.changed = True
 
 		# check for collisions?
 		for bolt in ship.bolts:
 			toRemove = False
 			for alien in aliens.aliens:
 				if bolt.shape.colliderect(alien.rect) and alien.state != DEAD:
-					incrementScore = alien.hit()
+					incrementScore += alien.hit()
 					toRemove = True
 			if toRemove:
 				ship.removeBolt(bolt)
@@ -166,7 +172,15 @@ def mainGame():
 		scoreBoard.addScore(incrementScore)
 		
 		# paint the new world
-		paintWorld()		
+		paintWorld()
+		
+		if ship.state == GAMEOVER:
+			# TO DO: gameover screen...
+			textSurface = font.render('GAME OVER', True, RED)
+			textRect = textSurface.get_rect()
+			textRect.center = CENTER
+			screen.blit(textSurface, textRect)
+					
 		
 		pygame.display.update()
 
@@ -182,7 +196,6 @@ def paintWorld():
 		
 		pygame.draw.circle(gameScreen, backdrop.stars[n]['colour'], tuple(backdrop.stars[n]['pos']), 1, 1)
 	
-	# draw ship
 	for b in ship.bolts:
 		pygame.draw.rect(gameScreen, b.colour, b.shape, 0)
 
@@ -194,8 +207,9 @@ def paintWorld():
 		if alien.state != DEAD:
 			gameScreen.blit(alien.shape, alien.rect)
 
-	ship.shape.center = ship.pos
-	pygame.draw.rect(gameScreen, ship.colour, ship.shape, 0)
+	# draw ship
+	ship.rect.center = ship.pos
+	gameScreen.blit(ship.shape, ship.rect)
 			
 	
 	# make sure explosions are at the foreground,
@@ -252,8 +266,9 @@ def drawStatusBar():
 		#pygame.draw.rect(statusBar.surface, BLUE, statusBar.surface.get_rect(), 1)
 		
 		for i in range(ship.lives - 1):
-			ship.shape.topleft = (SHIPSIZE * 1.5 * i + SHIPSIZE // 2, 0)
-			pygame.draw.rect(statusBar.surface, ship.colour, ship.shape, 0)
+			ship.rect.topleft = (SHIPSIZE * 1.5 * i + SHIPSIZE // 2, 0)
+			statusBar.surface.blit(ship.shape, ship.rect)
+			#pygame.draw.rect(statusBar.surface, ship.colour, ship.shape, 0)
 			
 		textSurface = font.render('Stage {}'.format(statusBar.stage), True, WHITE)
 		textRect = textSurface.get_rect()
