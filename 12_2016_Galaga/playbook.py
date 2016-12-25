@@ -99,6 +99,7 @@ class Playbook(object):
 					self.currentAction = None
 			
 			elif self.currentAction == 'formed':
+				self.aliens.state = FORMATION_DONE
 				if len(self.aliens.aliens) == 0:
 					self.currentAction = None
 					

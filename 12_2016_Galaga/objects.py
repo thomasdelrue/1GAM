@@ -43,12 +43,16 @@ class Alien(pygame.sprite.Sprite):
 		if self.alienType == GALAGA:
 			self.lives = 2
 			self.colour = GREEN
+			# TO DO: determine the score of a galaga...
+			self.score = 0
 		else:
 			self.lives = 1
 			if self.alienType == BEE:
 				self.colour = YELLOW
+				self.score = 50
 			elif self.alienType == BUTTERFLY:
 				self.colour = RED
+				self.score = 80
 
 		
 		# to do: use the Sprite class for the shape 
@@ -64,6 +68,14 @@ class Alien(pygame.sprite.Sprite):
 	def getTrajectory(self, typeOfTrajectory, timePassed):
 		# to do
 		cp = BEZ_CP_SETS[typeOfTrajectory]
+		
+		# cp's are relative for these trajectories; they need adjusting from the 'constants' cp
+		if typeOfTrajectory in (BEE_DIVE_FROM_R, BEE_DIVE_FROM_L):
+			print('currentPos:', self.currentPos)
+			print('cp[0]:', cp[0])
+			offset = self.currentPos[0] - cp[0][0], self.currentPos[1] - cp[0][1]
+			for i in range(len(cp)):
+				cp[i] = cp[i][0] + offset[0], cp[i][1] + offset[1]
 
 		#cp.append(self.formation.formationCoord[self.formPos])
 		path = BezierPath(cp)
@@ -78,6 +90,18 @@ class Alien(pygame.sprite.Sprite):
 			pygame.draw.aalines(self.origShape, self.colour, True, [(1, ALIENSIZE // 2), (ALIENSIZE - 2, 1), (ALIENSIZE - 2, ALIENSIZE - 2)])
 			self.shape = pygame.transform.rotate(self.origShape, self.heading)
 		
+		if self.lives == 0:
+			if self.state != IN_FORMATION:
+				self.score *= 2
+			self.state = DEAD
+			self.frame = 1
+			self.shape = Surface((int(ALIENSIZE * 1.5), int(ALIENSIZE * 1.5)))
+			self.rect = self.shape.get_rect()
+			self.rect.center = tuple(self.currentPos)
+			
+			return self.score
+
+		return 0		
 	
 	def move(self, timePassed):
 		if self.state == IN_FORMATION:
@@ -87,7 +111,7 @@ class Alien(pygame.sprite.Sprite):
 				self.setHeading(270)
 			
 			pass
-		elif self.state == ENTERING:
+		elif self.state in (ENTERING, DIVING):
 			if len(self.trajectory) > 0:
 				self.oldPos = self.currentPos
 				self.currentPos = self.trajectory.pop(0)
@@ -107,6 +131,8 @@ class Alien(pygame.sprite.Sprite):
 					self.setHeading()
 
 			self.rect.center = tuple(self.currentPos)
+		
+			
 				
 	def setHeading(self, heading=None):
 		if heading is None:
@@ -125,6 +151,7 @@ class AlienCollection(object):
 		self.formRec = Rect(0, 0, (ALIENSIZE * 1.5) * 9 + ALIENSIZE, (ALIENSIZE * 1.5) * 4 + ALIENSIZE)
 		self.formRec.midbottom = (VIEWWIDTH // 2, VIEWHEIGHT // 2)
 		self.formationCoord = {(r, c): (int(self.formRec.left + ALIENSIZE * c * 1.5 + ALIENSIZE // 2), int(self.formRec.top + ALIENSIZE * r * 1.5 + ALIENSIZE // 2)) for r in range(5) for c in range(10) }
+		self.alienInFormaton = {}
 		
 		self.state = FORMING
 		
@@ -135,14 +162,22 @@ class AlienCollection(object):
 		self.directionStep = +1
 		self.speedStep = .5
 		self.timeSpent = .0
+		
+		# when formation complete, these are the aliens that make dives
+		self.attackers = []
 
 	def addAlien(self, alien):
 		self.aliens.append(alien)
 		alien.formation = self
+		self.alienInFormaton[alien.formPos] = alien
 		
 	def removeAlien(self, alien):
 		alien.formation = None
 		self.aliens.remove(alien)
+		if alien in self.attackers:
+			self.attackers.remove(alien)
+		del self.alienInFormaton[alien.formPos]
+		
 		
 	'''
 	alienList: list of tuples: alienType, formPos
@@ -187,9 +222,7 @@ class AlienCollection(object):
 				margin = (self.formRec.width - ALIENSIZE * 10) // 9
 				for k in self.formationCoord:
 					if not k[0] == 0:
-						'''if k[0] == 1:
-							print()'''
-						self.formationCoord[k] = self.formRec.left + (ALIENSIZE + margin) * k[1], self.formationCoord[k][1]
+						self.formationCoord[k] = int(self.formRec.left + (ALIENSIZE + margin) * k[1] + ALIENSIZE // 2), self.formationCoord[k][1]
 						
 				if self.step >= 8:
 					self.step = 0
@@ -213,6 +246,38 @@ class AlienCollection(object):
 					self.directionStep *= -1
 		else:
 			pass
+
+
+	def updateAliens(self, timePassed):
+		for alien in self.aliens:
+			if alien.state == DEAD:
+				x, y = alien.shape.get_size()
+				alien.shape.fill(BLACK)
+				pygame.draw.circle(alien.shape, WHITE, (x // 2, y // 2), alien.frame, 1)
+				alien.frame += 1
+				if alien.frame >= ALIENSIZE // 2 * 1.5:
+					self.removeAlien(alien)
+		
+		if self.state == FORMATION_DONE:
+			# TO DO: decision rule whether an attacker will make a dive or not
+			if len(self.attackers) == 0 and len(self.aliens) > 0:
+				try:
+					self.attackers.append(self.alienInFormaton[(random.randint(3, 4), random.randint(0, 9))])
+				except KeyError:
+					pass
+				
+				
+			for alien in self.attackers:
+				if alien.state == IN_FORMATION and random.random() < .2:
+					alien.state = DIVING
+					if alien.formPos[1] >= 5:
+						alien.getTrajectory(BEE_DIVE_FROM_R, timePassed)
+					else:
+						alien.getTrajectory(BEE_DIVE_FROM_L, timePassed)
+
+			
+			
+						
 
 
 class Bolt(object):

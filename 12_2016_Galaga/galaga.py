@@ -5,6 +5,47 @@ Thomas Delrue
 Galaga-style clone
 '''
 
+
+'''
+TO DO's:
+
+- diving, first bees, butterflies, galagas (with/without escort butterflies)
+- collision detection with aliens/ship
+- aliens shooting... 
+
+- scoring
+-- make groups (state ENTERING), if last one of a group is hit, score bonus, display bonus on screen
+
+- writing text to screen, 
+-- static/moving backdrop
+
+- if ship is DEAD, aliens returning to formation, READY, then continue...
+
+- GAMEOVER
+
+- sprites!
+
+- galaga capturing
+
+- begin screen: galaga logo
+- end screen: hit/miss
+
+- different levels
+
+- challenging level 3
+
+- new aliens: snakes, scorpions...
+
+- sounds
+
+- joystick
+
+- refactor code!
+-- make Vector2 subclass of tuple
+-- AlienCollection.aliens dict instead of .aliens list + .alienInFormation dict 
+
+'''
+
 import pygame
 import sys
 
@@ -58,6 +99,7 @@ def mainGame():
 	
 	movex = 0
 	
+		
 	screen.fill(BLACK)
 	
 	# game loop
@@ -85,6 +127,7 @@ def mainGame():
 					movex = 0
 		
 		# update states
+		incrementScore = 0
 		timePassed = clock.tick(FPS) / 1000.0
 		
 		playbook.check(timePassed)
@@ -113,13 +156,14 @@ def mainGame():
 		for bolt in ship.bolts:
 			toRemove = False
 			for alien in aliens.aliens:
-				if bolt.shape.colliderect(alien.rect):
-					alien.hit()
-					if not alien.lives: 
-						aliens.removeAlien(alien)
+				if bolt.shape.colliderect(alien.rect) and alien.state != DEAD:
+					incrementScore = alien.hit()
 					toRemove = True
 			if toRemove:
 				ship.removeBolt(bolt)
+		
+		aliens.updateAliens(timePassed)
+		scoreBoard.addScore(incrementScore)
 		
 		# paint the new world
 		paintWorld()		
@@ -142,20 +186,24 @@ def paintWorld():
 	for b in ship.bolts:
 		pygame.draw.rect(gameScreen, b.colour, b.shape, 0)
 
-	ship.shape.center = ship.pos
-	pygame.draw.rect(gameScreen, ship.colour, ship.shape, 0)
-	
 	
 	# aliens
 	#pygame.draw.rect(gameScreen, RED, aliens.formRec, 1)
 	
 	for alien in aliens.aliens:
-		gameScreen.blit(alien.shape, alien.rect)
-		#pygame.draw.rect(gameScreen, alien.colour, alien.shape, 0)
+		if alien.state != DEAD:
+			gameScreen.blit(alien.shape, alien.rect)
+
+	ship.shape.center = ship.pos
+	pygame.draw.rect(gameScreen, ship.colour, ship.shape, 0)
+			
 	
-	'''for coord in aliens.formationCoord:
-		#print(aliens.formationCoord[coord])
-		gameScreen.set_at(aliens.formationCoord[coord], RED)'''
+	# make sure explosions are at the foreground,
+	# so that's why we first draw the living aliens, and secondly the exploding ones...
+	for alien in aliens.aliens:
+		if alien.state == DEAD:
+			gameScreen.blit(alien.shape, alien.rect)
+			
 	
 	screen.blit(gameScreen, VIEWPORT.topleft)
 

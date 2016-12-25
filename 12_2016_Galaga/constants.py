@@ -32,7 +32,7 @@ MOVESPEED = 500. # for the ship moving sideways
 
 BOLTLENGTH = SHIPSIZE // 2
 BOLTWIDTH = 3
-BOLTSPEED = 500. # pixels per second
+BOLTSPEED = 600. # pixels per second
 
 SCOREBOARD = Rect(0, 0, VIEWWIDTH, SHIPSIZE)
 SCOREBOARD.midbottom = VIEWPORT.midtop
@@ -87,12 +87,16 @@ IN_FORMATION = 5
 DEAD = 6
 
 ENTERING = 7 
+DIVING = 8
 
 # Bezier curve datasets
 CURVE1_FROM_MIDTOPR = 0
 CURVE1_FROM_MIDTOPL = 1
 CURVE1_FROM_LBOTTOM = 2
 CURVE1_FROM_RBOTTOM = 3
+BEE_DIVE_FROM_R = 4
+BEE_DIVE_FROM_L = 5
+
 
 BEZ_CP_SETS = [# CURVE1_FROM_MIDTOPR
                [(300, -50), (400, 125), (-50, 200), (50, 350), (100, 400), (226, 400), (226, 300)],
@@ -104,4 +108,10 @@ BEZ_CP_SETS = [# CURVE1_FROM_MIDTOPR
                # CURVE1_FROM_RBOTTOM
                [(550, 500), (325, 525), (300, 410), (300, 300), (300, 180), (450, 180), (450, 300),
                 (450, 420), (300, 420), (300, 250)],
+               # BEE_DIVE_FROM_R
+               [(402, 288), (402, 253), (462, 243), (452, 308), (432, 428), (212, 408), (222, 528),
+                (232, 630), (362, 630), (352, 488)],
+               # BEE_DIVE_FROM_L
+               [(98, 288), (98, 253), (38, 243), (48, 308), (68, 428), (288, 408), (278, 528),
+                (268, 630), (138, 630), (148, 488)],
               ]
