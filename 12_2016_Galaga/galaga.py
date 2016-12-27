@@ -13,6 +13,11 @@ TO DO's:
 -- have outsiders, next to do: wandering butterfly dive, next: galaga dive (loop), with/without butterfly escort...
 - aliens shooting... 
 
+-- probably behaviour of non-galagas is different when there is no longer a galaga in formation? Then they
+-- continue to wander... bee swoops down (adjusting towards the player, so it needn't be in the middle of the screen), 
+-- and makes a looping at the bottom to continue, and come again from the top...
+
+
 - scoring
 -- make groups (state ENTERING), if last one of a group is hit, score bonus, display bonus on screen
 

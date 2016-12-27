@@ -45,6 +45,11 @@ data = {1: # stage
 			['formed']
 		   ],
 		2: [
+			['squad', ([(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))], CURVE1_FROM_MIDTOPR), 
+			   		  ([(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))], CURVE1_FROM_MIDTOPL)],
+			['formed']
+		   ],
+		3: [
 			['nothing', ]
 		   ]
 	   }
