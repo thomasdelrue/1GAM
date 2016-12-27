@@ -44,8 +44,6 @@ TO DO's:
 
 - sounds
 
-- joystick
-
 - refactor code!
 -- make Vector2 subclass of tuple
 -- AlienCollection.aliens dict instead of .aliens list + .alienInFormation dict 
@@ -87,6 +85,13 @@ def mainGame():
 	playbook.log = log
 	gameScreen = pygame.Surface((VIEWWIDTH, VIEWHEIGHT))
 	
+	joystick = None
+	if pygame.joystick.get_count() > 0:
+		joystick = pygame.joystick.Joystick(0)
+		joystick.init()
+	log.message('joystick enabled={}'.format(joystick is not None))
+	
+	
 	
 	'''for i in range(5):
 		for j in range(10):
@@ -126,6 +131,19 @@ def mainGame():
 						movex += 1
 					if event.key in FIRE_KEYS:
 						ship.fireBolt()
+				if joystick:
+					if event.type == JOYAXISMOTION:
+						x = joystick.get_axis(0)
+						if abs(x) < .2:
+							movex = 0
+						elif x < 0:
+							movex = -1
+						elif x > 0:
+							movex = +1
+					elif event.type == JOYBUTTONDOWN:
+						if joystick.get_button(0):
+							ship.fireBolt()
+						
 			if event.type == KEYUP:
 				if event.key in LEFT_KEYS:
 					movex = 0

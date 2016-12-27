@@ -296,8 +296,9 @@ class AlienCollection(object):
 						self.attackers.append(self.outsiders[i])
 			
 			# TO DO: decision rule whether an attacker will make a dive or not	
-			print('attackers:', self.attackers)
+			# print('attackers:', self.attackers)
 			for alien in self.attackers:
+				# hard-coded frequency... probably stage-dependent
 				if alien.state == IN_FORMATION and random.random() < 0.05 / len(self.attackers):
 					alien.state = DIVING
 					#if alien.alienType == BEE:
