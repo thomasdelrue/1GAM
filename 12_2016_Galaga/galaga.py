@@ -10,13 +10,14 @@ Galaga-style clone
 TO DO's:
 
 - diving, first bees, butterflies, galagas (with/without escort butterflies)
-- collision detection with aliens/ship
+-- have outsiders, next to do: wandering butterfly dive, next: galaga dive (loop), with/without butterfly escort...
 - aliens shooting... 
 
 - scoring
 -- make groups (state ENTERING), if last one of a group is hit, score bonus, display bonus on screen
 
-- writing text to screen, 
+- writing text to screen!
+ 
 -- static/moving backdrop
 
 - if ship is DEAD, aliens returning to formation, READY, then continue...
@@ -127,7 +128,7 @@ def mainGame():
 					movex = 0
 		
 		# update states
-		incrementScore = 0
+		scorePoints = 0
 		timePassed = clock.tick(FPS) / 1000.0
 		
 		playbook.check(timePassed)
@@ -154,7 +155,7 @@ def mainGame():
 				
 			if ship.state == MOVING and alien.state != DEAD:
 				if alien.rect.colliderect(ship.rect):
-					incrementScore += alien.hit()
+					scorePoints += alien.hit()
 					ship.hit()
 					statusBar.changed = True
 
@@ -163,13 +164,20 @@ def mainGame():
 			toRemove = False
 			for alien in aliens.aliens:
 				if bolt.shape.colliderect(alien.rect) and alien.state != DEAD:
-					incrementScore += alien.hit()
+					scorePoints += alien.hit()
 					toRemove = True
 			if toRemove:
 				ship.removeBolt(bolt)
 		
 		aliens.updateAliens(timePassed)
-		scoreBoard.addScore(incrementScore)
+		
+		if scorePoints:
+			scoreBoard.addScore(scorePoints)
+			
+			if len(EXTRA_LIVES) > 0 and scoreBoard.score >= EXTRA_LIVES[0]:
+				EXTRA_LIVES.pop(0)
+				ship.lives += 1
+				statusBar.changed = True
 		
 		# paint the new world
 		paintWorld()

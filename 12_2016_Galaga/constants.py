@@ -44,8 +44,8 @@ DEBUGWINDOW.bottomright = SCREENSIZE
 
 NR_OF_STARS = 50
 
-
-
+# at what score, the player receives an extra life
+EXTRA_LIVES = [30000, 100000]
 
 
 

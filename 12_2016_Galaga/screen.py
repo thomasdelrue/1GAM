@@ -32,11 +32,10 @@ class ScoreBoard(object):
 		self.changed = True
 		
 	def addScore(self, points):
-		if points:
-			self.score += points
-			self.changed = True
-			if self.hires < self.score:
-				self.hires = self.score		
+		self.score += points
+		self.changed = True
+		if self.hires < self.score:
+			self.hires = self.score		
 		
 
 

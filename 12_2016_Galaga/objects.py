@@ -44,7 +44,7 @@ class Alien(pygame.sprite.Sprite):
 			self.lives = 2
 			self.colour = GREEN
 			# TO DO: determine the score of a galaga...
-			self.score = 0
+			self.score = 200
 		else:
 			self.lives = 1
 			if self.alienType == BEE:
@@ -64,6 +64,8 @@ class Alien(pygame.sprite.Sprite):
 		self.rect = self.shape.get_rect()
 		self.rect.center = self.currentPos
 		
+	def __repr__(self):
+		return str(self.formPos)
 		
 	def getTrajectory(self, typeOfTrajectory, timePassed):
 		# to do
@@ -71,8 +73,8 @@ class Alien(pygame.sprite.Sprite):
 		
 		# cp's are relative for these trajectories; they need adjusting from the 'constants' cp
 		if typeOfTrajectory in (BEE_DIVE_FROM_R, BEE_DIVE_FROM_L):
-			print('currentPos:', self.currentPos)
-			print('cp[0]:', cp[0])
+			#print('currentPos:', self.currentPos)
+			#print('cp[0]:', cp[0])
 			offset = self.currentPos[0] - cp[0][0], self.currentPos[1] - cp[0][1]
 			for i in range(len(cp)):
 				cp[i] = cp[i][0] + offset[0], cp[i][1] + offset[1]
@@ -151,7 +153,7 @@ class AlienCollection(object):
 		self.formRec = Rect(0, 0, (ALIENSIZE * 1.5) * 9 + ALIENSIZE, (ALIENSIZE * 1.5) * 4 + ALIENSIZE)
 		self.formRec.midbottom = (VIEWWIDTH // 2, VIEWHEIGHT // 2)
 		self.formationCoord = {(r, c): (int(self.formRec.left + ALIENSIZE * c * 1.5 + ALIENSIZE // 2), int(self.formRec.top + ALIENSIZE * r * 1.5 + ALIENSIZE // 2)) for r in range(5) for c in range(10) }
-		self.alienInFormaton = {}
+		self.alienInFormation = {}
 		
 		self.state = FORMING
 		
@@ -165,18 +167,23 @@ class AlienCollection(object):
 		
 		# when formation complete, these are the aliens that make dives
 		self.attackers = []
+		self.outsiders = []
+		self.getOutsiders = True
 
 	def addAlien(self, alien):
 		self.aliens.append(alien)
 		alien.formation = self
-		self.alienInFormaton[alien.formPos] = alien
+		self.alienInFormation[alien.formPos] = alien
 		
 	def removeAlien(self, alien):
 		alien.formation = None
 		self.aliens.remove(alien)
 		if alien in self.attackers:
 			self.attackers.remove(alien)
-		del self.alienInFormaton[alien.formPos]
+		if alien in self.outsiders:
+			self.outsiders.remove(alien)
+			self.getOutsiders = True
+		del self.alienInFormation[alien.formPos]
 		
 		
 	'''
@@ -188,11 +195,7 @@ class AlienCollection(object):
 		firstAlien.getTrajectory(typeOfTrajectory, timePassed)
 		
 		refPos = firstAlien.trajectory[0]
-		#print('refPos:', refPos)
 		offset = (refPos - firstAlien.trajectory[1]).normalize()
-		#print('offset:', offset)
-		#nextPos = refPos - offset * ALIENSIZE * 1.5
-		#print('nextPos', nextPos)
 		
 		for i in range(1, len(alienList)):
 			nextAlien = Alien(alienList[i][0], (0, 0), alienList[i][1])
@@ -206,7 +209,23 @@ class AlienCollection(object):
 			
 			nextAlien.trajectory = extraLeg + nextAlien.trajectory
 		
+	
+	def selectOutsiders(self):
+		res = []
 		
+		for r, c in [(random.randint(3, 4), 0), (random.randint(1, 2), 1), (random.randint(3, 4), -9), (random.randint(1, 2), -8),
+					(0, 3), (0, -6)]: 
+			for i in range(10):
+				alien = self.alienInFormation.get((r, abs(c + i)))
+				if alien and alien not in res:
+					if alien in self.outsiders:
+						break
+					res.append(alien)
+					break
+			 
+		print('res=', res)
+		return res
+	
 		
 	def moveFormation(self, timePassed):
 		if self.state == FORMATION_DONE:
@@ -257,19 +276,31 @@ class AlienCollection(object):
 				alien.frame += 1
 				if alien.frame >= ALIENSIZE // 2 * 1.5:
 					self.removeAlien(alien)
+					
 		
 		if self.state == FORMATION_DONE:
-			# TO DO: decision rule whether an attacker will make a dive or not
-			if len(self.attackers) == 0 and len(self.aliens) > 0:
-				try:
-					self.attackers.append(self.alienInFormaton[(random.randint(3, 4), random.randint(0, 9))])
-				except KeyError:
-					pass
+			if self.getOutsiders:
+				added = False
+				selection = self.selectOutsiders()
+				for i in range(len(selection)):
+					if selection[i] not in self.outsiders:
+						self.outsiders.append(selection[i])
+						added = True
 				
-				
+				if added:
+					self.getOutsiders = False
+			
+			if len(self.attackers) < len(self.aliens) and len(self.attackers) <= len(self.outsiders):
+				for i in range(len(self.outsiders)):
+					if self.outsiders[i] not in self.attackers:
+						self.attackers.append(self.outsiders[i])
+			
+			# TO DO: decision rule whether an attacker will make a dive or not	
+			print('attackers:', self.attackers)
 			for alien in self.attackers:
-				if alien.state == IN_FORMATION and random.random() < .2:
+				if alien.state == IN_FORMATION and random.random() < 0.05 / len(self.attackers):
 					alien.state = DIVING
+					#if alien.alienType == BEE:
 					if alien.formPos[1] >= 5:
 						alien.getTrajectory(BEE_DIVE_FROM_R, timePassed)
 					else:
