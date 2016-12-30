@@ -95,7 +95,6 @@ def findPoints(p0, p1, p2, p3):
 class BezierPath(object):
 
     def __init__(self, vs):
-        self.controlPoints = []
         self.controlPoints = [Vector2(*t) for t in vs]
 
 

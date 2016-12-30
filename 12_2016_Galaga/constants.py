@@ -7,6 +7,7 @@ DEBUG = True
 FPS = 30
 
 
+
 SCREENSIZE = (1024, 768)
 CENTER = (SCREENSIZE[0] // 2, SCREENSIZE[1] // 2)
 
@@ -32,7 +33,10 @@ MOVESPEED = 500. # for the ship moving sideways
 
 BOLTLENGTH = SHIPSIZE // 2
 BOLTWIDTH = 3
-BOLTSPEED = 600. # pixels per second
+BOLTSPEED = 500. # pixels per second
+
+ALIENBOLT = 1
+SHIPBOLT = 2
 
 SCOREBOARD = Rect(0, 0, VIEWWIDTH, SHIPSIZE)
 SCOREBOARD.midbottom = VIEWPORT.midtop
@@ -98,6 +102,8 @@ CURVE1_FROM_LBOTTOM = 2
 CURVE1_FROM_RBOTTOM = 3
 BEE_DIVE_FROM_R = 4
 BEE_DIVE_FROM_L = 5
+BUTTERFLY_DIVE_FROM_R = 6
+BUTTERFLY_DIVE_FROM_L = 7
 
 
 BEZ_CP_SETS = [# CURVE1_FROM_MIDTOPR
@@ -116,4 +122,8 @@ BEZ_CP_SETS = [# CURVE1_FROM_MIDTOPR
                # BEE_DIVE_FROM_L
                [(98, 288), (98, 253), (38, 243), (48, 308), (68, 428), (288, 408), (278, 528),
                 (268, 630), (138, 630), (148, 488)],
+               # BUTTERFLY_DIVE_FROM_R
+               [(402, 288), (402, 253), (462, 243), (452, 308), (432, 428), (212, 408), (222, 528)],
+               # BUTTERFLY_DIVE_FROM_L
+               [(98, 288), (98, 253), (38, 243), (48, 308), (68, 428), (288, 408), (278, 528)],               
               ]

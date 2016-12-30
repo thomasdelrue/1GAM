@@ -1,3 +1,4 @@
+import math
 import random
 import pygame
 import vector2
@@ -9,21 +10,6 @@ from pygame import Rect, Surface
 
 
 
-'''
-Aliens should be finite-state machines...
-
-Trajectory object...
-either with fancy mathematical functions for the possible trajectory,
-or rudimentary goniometrical trajectories... ie. plotted along a straight 
-line, then along the perimeter of a circle... (tryout scripts...)
-
-Formations object, 
-that holds all the coordinates for the different positions of the formation,
-whether the position is occupied by an alien or not...
-having these coordinates, then it's easy to assign an alien that makes it's
-entrance it's 'destination point' in the formation...
-'''
-
 class Alien(pygame.sprite.Sprite):
 	def __init__(self, alienType, currentPos, formPos, state=ENTERING):
 		pygame.sprite.Sprite.__init__(self)
@@ -32,7 +18,7 @@ class Alien(pygame.sprite.Sprite):
 		# current position on screen
 		self.currentPos = currentPos
 		# the previous position
-		self.prevPos = currentPos
+		self.oldPos = currentPos
 		# designated spot in the formation 
 		self.formPos = formPos
 		self.state = state
@@ -62,7 +48,7 @@ class Alien(pygame.sprite.Sprite):
 		pygame.draw.aalines(self.origShape, self.colour, True, [(1, ALIENSIZE // 2), (ALIENSIZE - 2, 1), (ALIENSIZE - 2, ALIENSIZE - 2)])
 		self.shape = self.origShape
 		self.rect = self.shape.get_rect()
-		self.rect.center = self.currentPos
+		self.rect.center = tuple(self.currentPos)
 		
 	def __repr__(self):
 		return str(self.formPos)
@@ -72,17 +58,15 @@ class Alien(pygame.sprite.Sprite):
 		cp = BEZ_CP_SETS[typeOfTrajectory]
 		
 		# cp's are relative for these trajectories; they need adjusting from the 'constants' cp
-		if typeOfTrajectory in (BEE_DIVE_FROM_R, BEE_DIVE_FROM_L):
-			#print('currentPos:', self.currentPos)
-			#print('cp[0]:', cp[0])
-			offset = self.currentPos[0] - cp[0][0], self.currentPos[1] - cp[0][1]
+		if typeOfTrajectory in (BEE_DIVE_FROM_R, BEE_DIVE_FROM_L, BUTTERFLY_DIVE_FROM_R, BUTTERFLY_DIVE_FROM_L):
+			offset = self.currentPos.x - cp[0][0], self.currentPos.y - cp[0][1]
 			for i in range(len(cp)):
 				cp[i] = cp[i][0] + offset[0], cp[i][1] + offset[1]
 
-		#cp.append(self.formation.formationCoord[self.formPos])
 		path = BezierPath(cp)
 		#print(path.controlPoints)
-		self.trajectory = path.getDrawingPoints(timePassed)
+		#self.trajectory = path.getDrawingPoints(timePassed)
+		self.trajectory = path.getDrawingPoints(1 / FPS)
 	
 	
 	def hit(self):
@@ -106,31 +90,63 @@ class Alien(pygame.sprite.Sprite):
 		return 0		
 	
 	def move(self, timePassed):
+		self.oldPos = self.currentPos
 		if self.state == IN_FORMATION:
 			# movement calculated in Formation
-			
-			if self.heading != 270:
-				self.setHeading(270)
 			
 			pass
 		elif self.state in (ENTERING, DIVING):
 			if len(self.trajectory) > 0:
-				self.oldPos = self.currentPos
 				self.currentPos = self.trajectory.pop(0)
 				
 				self.setHeading()
 				
 				#print('alien currentPost', self.currentPos)
 			else:
-				destPos = Vector2(*self.formation.formationCoord[self.formPos])
-				diff = destPos - Vector2(*self.currentPos) 
-				if diff.get_magnitude() < 10:
-					self.state = IN_FORMATION
+				if self.alienType == BUTTERFLY and self.state == DIVING and self.currentPos.y > self.formation.formationCoord[self.formPos][1]:
+					
+					'''newHeading = max(min(self.heading + random.choice([-15, 15, 0, 0, 0]), 135), 45)				
+					print('heading={} newHeading={}'.format(self.heading, newHeading))
+					print('self.heading={} currentPos.getHeading={} currentPos={}'.format(self.heading, Vector2(*self.currentPos).getHeading(), self.currentPos))
+					diff = Vector2(math.cos(math.radians(newHeading)), math.sin(math.radians(newHeading)))
+					res = Vector2(*self.currentPos) + diff * ALIENSPEED * timePassed 
+					if res.x < ALIENSIZE // 2:
+						res.x = ALIENSIZE // 2
+					elif res.x > VIEWWIDTH - ALIENSIZE // 2:
+						res.x = VIEWWIDTH - ALIENSIZE // 2
+					if res.y > VIEWHEIGHT + ALIENSIZE:
+						res.y = -ALIENSIZE
+						res.x = self.formation.formationCoord[self.formPos][0]
+					self.currentPos = tuple(res)
+					self.setHeading()'''
+					wander = random.randint(1, 2)
+										
+					if self.currentPos.y > VIEWHEIGHT + ALIENSIZE:
+						self.currentPos = Vector2(self.formation.formationCoord[self.formPos][0], -ALIENSIZE)
+					else:
+						
+						if wander == 1 or self.currentPos.x >= 500:
+							nextPos = Vector2(self.currentPos.x - 50, self.currentPos.y + 80)
+						else:  
+							nextPos = Vector2(self.currentPos.x + 50, self.currentPos.y + 80)
+						
+						cp = [self.currentPos, Vector2(self.currentPos.x, nextPos.y - 40), Vector2(nextPos.x, self.currentPos.y + 40), nextPos]
+						
+						self.trajectory = BezierPath(cp).getDrawingPoints(timePassed)
+						
+						self.currentPos = self.trajectory.pop(0)
+
+					
+					self.setHeading(90)
 				else:
-					self.oldPos = self.currentPos
-					res = Vector2(*self.currentPos) + diff.normalize() * ALIENSPEED * timePassed
-					self.currentPos = tuple(res) 
-					self.setHeading()
+					destPos = Vector2(*self.formation.formationCoord[self.formPos])
+					diff = destPos - self.currentPos 
+					if diff.get_magnitude() < 10:
+						self.state = IN_FORMATION
+					else:
+						res = self.currentPos + diff.normalize() * ALIENSPEED * timePassed
+						self.currentPos = res 
+						self.setHeading()
 
 			self.rect.center = tuple(self.currentPos)
 		
@@ -138,9 +154,10 @@ class Alien(pygame.sprite.Sprite):
 				
 	def setHeading(self, heading=None):
 		if heading is None:
-			self.heading = (Vector2(*self.currentPos) - Vector2(*self.oldPos)).getHeading()
+			self.heading = (self.currentPos - self.oldPos).getHeading()
 		else:
 			self.heading = heading
+		
 		self.shape = pygame.transform.rotate(self.origShape, self.heading)
 		self.rect = self.shape.get_rect()
 				
@@ -190,7 +207,7 @@ class AlienCollection(object):
 	alienList: list of tuples: alienType, formPos
 	'''
 	def createSquadron(self, alienList, typeOfTrajectory, timePassed):
-		firstAlien = Alien(alienList[0][0], (0, 0), alienList[0][1])
+		firstAlien = Alien(alienList[0][0], Vector2(0, 0), alienList[0][1])
 		self.addAlien(firstAlien)
 		firstAlien.getTrajectory(typeOfTrajectory, timePassed)
 		
@@ -198,7 +215,7 @@ class AlienCollection(object):
 		offset = (refPos - firstAlien.trajectory[1]).normalize()
 		
 		for i in range(1, len(alienList)):
-			nextAlien = Alien(alienList[i][0], (0, 0), alienList[i][1])
+			nextAlien = Alien(alienList[i][0], Vector2(0, 0), alienList[i][1])
 			self.addAlien(nextAlien)
 			nextAlien.getTrajectory(typeOfTrajectory, timePassed)
 			
@@ -256,7 +273,6 @@ class AlienCollection(object):
 				self.step += 1
 				
 				self.formRec.left += self.directionStep * 10
-				#print('xbounds Rec, step {}: {} - {}'.format(self.step, self.formRec.left, self.formRec.right))
 				for k in self.formationCoord:
 					self.formationCoord[k] = self.formationCoord[k][0] + self.directionStep * 10, self.formationCoord[k][1]
 				
@@ -276,24 +292,33 @@ class AlienCollection(object):
 				alien.frame += 1
 				if alien.frame >= ALIENSIZE // 2 * 1.5:
 					self.removeAlien(alien)
+			
+			elif alien.state == DIVING:
+				if alien.heading >= 45 and alien.heading <= 135:
+					if random.random() < 0.05 / len(self.attackers):
+						self.bolts.append(Bolt(tuple(alien.currentPos), type=ALIENBOLT))
 					
+		for bolt in self.bolts:
+			if bolt.pos[1] + BOLTLENGTH > VIEWHEIGHT:
+				self.bolts.remove(bolt)
 		
 		if self.state == FORMATION_DONE:
-			if self.getOutsiders:
-				added = False
-				selection = self.selectOutsiders()
-				for i in range(len(selection)):
-					if selection[i] not in self.outsiders:
-						self.outsiders.append(selection[i])
-						added = True
+			if len(self.attackers) < len(self.aliens):
+				if self.getOutsiders:
+					added = False
+					selection = self.selectOutsiders()
+					for i in range(len(selection)):
+						if selection[i] not in self.outsiders:
+							self.outsiders.append(selection[i])
+							added = True
+					
+					if added:
+						self.getOutsiders = False
 				
-				if added:
-					self.getOutsiders = False
-			
-			if len(self.attackers) < len(self.aliens) and len(self.attackers) <= len(self.outsiders):
-				for i in range(len(self.outsiders)):
-					if self.outsiders[i] not in self.attackers:
-						self.attackers.append(self.outsiders[i])
+				if len(self.attackers) <= len(self.outsiders):
+					for i in range(len(self.outsiders)):
+						if self.outsiders[i] not in self.attackers:
+							self.attackers.append(self.outsiders[i])
 			
 			# TO DO: decision rule whether an attacker will make a dive or not	
 			# print('attackers:', self.attackers)
@@ -301,11 +326,22 @@ class AlienCollection(object):
 				# hard-coded frequency... probably stage-dependent
 				if alien.state == IN_FORMATION and random.random() < 0.05 / len(self.attackers):
 					alien.state = DIVING
-					#if alien.alienType == BEE:
-					if alien.formPos[1] >= 5:
-						alien.getTrajectory(BEE_DIVE_FROM_R, timePassed)
-					else:
-						alien.getTrajectory(BEE_DIVE_FROM_L, timePassed)
+					if alien.alienType == BEE:
+						if alien.formPos[1] >= 5:
+							alien.getTrajectory(BEE_DIVE_FROM_R, timePassed)
+						else:
+							alien.getTrajectory(BEE_DIVE_FROM_L, timePassed)
+					elif alien.alienType == BUTTERFLY:
+						if alien.formPos[1] >= 5:
+							alien.getTrajectory(BUTTERFLY_DIVE_FROM_R, timePassed)
+						else:
+							alien.getTrajectory(BUTTERFLY_DIVE_FROM_L, timePassed)							
+					elif alien.alienType == GALAGA:
+						if alien.formPos[1] >= 5:
+							alien.getTrajectory(random.choice([BUTTERFLY_DIVE_FROM_R, BEE_DIVE_FROM_R]), timePassed)
+						else:
+							alien.getTrajectory(random.choice([BUTTERFLY_DIVE_FROM_L, BEE_DIVE_FROM_L]), timePassed)							
+					break
 
 			
 			
@@ -313,14 +349,22 @@ class AlienCollection(object):
 
 
 class Bolt(object):
-	def __init__(self, pos):
+	def __init__(self, pos, dest=None, type=SHIPBOLT):
 		self.pos = pos
 		self.colour = WHITE
+		self.type = type
 		self.shape = Rect(0, 0, BOLTWIDTH, BOLTLENGTH)
-		self.shape.center = self.pos		
+		self.shape.center = self.pos
+		# destination for ALIENBOLT
+		self.destination = dest		
 		
 	def move(self, timePassed):
-		self.pos = self.pos[0], self.pos[1] - BOLTSPEED * timePassed
+		if self.type == SHIPBOLT:
+			direction = -1
+		elif self.type == ALIENBOLT:
+			direction = +1
+		# to do: if alien bolt, move towards self.destination
+		self.pos = self.pos[0], self.pos[1] + direction * BOLTSPEED * timePassed
 		self.shape.center = self.pos		
 
 		

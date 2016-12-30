@@ -9,9 +9,13 @@ Galaga-style clone
 '''
 TO DO's:
 
-- diving, first bees, butterflies, galagas (with/without escort butterflies)
--- have outsiders, next to do: wandering butterfly dive, next: galaga dive (loop), with/without butterfly escort...
-- aliens shooting... 
+- if ship is DEAD, aliens returning to formation, READY, then continue...
+
+- diving, galagas (with/without escort butterflies)
+-- galaga dive (loop), with/without butterfly escort...
+- aliens shooting... homing in on ship  
+
+-- getTrajectory use an fixed timePassed variable, and not the 'current' one --> speed-up bug!!
 
 -- probably behaviour of non-galagas is different when there is no longer a galaga in formation? Then they
 -- continue to wander... bee swoops down (adjusting towards the player, so it needn't be in the middle of the screen), 
@@ -25,7 +29,7 @@ TO DO's:
  
 -- static/moving backdrop
 
-- if ship is DEAD, aliens returning to formation, READY, then continue...
+
 
 - GAMEOVER
 
@@ -91,25 +95,11 @@ def mainGame():
 		joystick.init()
 	log.message('joystick enabled={}'.format(joystick is not None))
 	
-	
-	
-	'''for i in range(5):
-		for j in range(10):
-			aliens.addAlien(Alien(BEE, aliens.formation[(i, j)], (i, j), IN_FORMATION))'''
-	'''aliens.state = FORMATION_DONE
-	aliens.step = 0'''
 
 	# move a tick, to set the pace... so we can have a timeframe for the aliens to move
 	timePassed = clock.tick(FPS) / 1000.0
 			
-	'''alienList = [(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))]	
-	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPR, timePassed)
-	
-	alienList = [(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))]	
-	aliens.createSquadron(alienList, CURVE1_FROM_MIDTOPL, timePassed)'''
-	
 	movex = 0
-	
 		
 	screen.fill(BLACK)
 	
@@ -121,8 +111,7 @@ def mainGame():
 			if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 				pygame.quit()
 				sys.exit()
-			''' to do: change the key event handling with key.get_pressed()
-				for a more intuitive right feel '''
+
 			if ship.state not in (DEAD, GAMEOVER):
 				if event.type == KEYDOWN:
 					if event.key in LEFT_KEYS:
@@ -158,7 +147,7 @@ def mainGame():
 
 		backdrop.moveStars(timePassed)
 				
-		if movex:
+		if movex and ship.state == MOVING:
 			ship.move(movex * timePassed * MOVESPEED)
 			
 		ship.update()
@@ -170,9 +159,9 @@ def mainGame():
 		for alien in aliens.aliens:
 			if alien.state == IN_FORMATION:
 				if alien.heading != 270:
-					alien.setHeading(270)				
-				alien.currentPos = aliens.formationCoord[alien.formPos]
-				alien.rect.center = alien.currentPos
+					alien.setHeading(min(270, alien.heading + 720 // FPS))				
+				alien.currentPos = Vector2(*aliens.formationCoord[alien.formPos])
+				alien.rect.center = tuple(alien.currentPos)
 			else:
 				alien.move(timePassed)
 				
@@ -181,8 +170,11 @@ def mainGame():
 					scorePoints += alien.hit()
 					ship.hit()
 					statusBar.changed = True
+					
+		for bolt in aliens.bolts:
+			bolt.move(timePassed)
 
-		# check for collisions?
+		# check for collisions
 		for bolt in ship.bolts:
 			toRemove = False
 			for alien in aliens.aliens:
@@ -191,6 +183,12 @@ def mainGame():
 					toRemove = True
 			if toRemove:
 				ship.removeBolt(bolt)
+		
+		if ship.state == MOVING:
+			for bolt in aliens.bolts:
+				if bolt.shape.colliderect(ship.rect):
+					ship.hit()
+					statusBar.changed = True
 		
 		aliens.updateAliens(timePassed)
 		
@@ -230,6 +228,9 @@ def paintWorld():
 	for b in ship.bolts:
 		pygame.draw.rect(gameScreen, b.colour, b.shape, 0)
 
+	for b in aliens.bolts:
+		pygame.draw.rect(gameScreen, b.colour, b.shape, 0)
+
 	
 	# aliens
 	#pygame.draw.rect(gameScreen, RED, aliens.formRec, 1)
@@ -263,7 +264,6 @@ def drawScoreBoard():
 		log.message('scoreBoard changed')
 		scoreBoard.surface.fill(BLACK)
 		scoreBoardRect = scoreBoard.surface.get_rect()
-		#pygame.draw.rect(scoreBoard.surface, GREEN, scoreBoardRect, 1)
 		
 		textSurface = font.render('HIGH SCORE', True, RED)
 		textRect = textSurface.get_rect()
@@ -294,12 +294,10 @@ def drawStatusBar():
 	if statusBar.changed:
 		log.message('statusBar changed')
 		statusBar.surface.fill(BLACK)
-		#pygame.draw.rect(statusBar.surface, BLUE, statusBar.surface.get_rect(), 1)
 		
 		for i in range(ship.lives - 1):
 			ship.rect.topleft = (SHIPSIZE * 1.5 * i + SHIPSIZE // 2, 0)
 			statusBar.surface.blit(ship.shape, ship.rect)
-			#pygame.draw.rect(statusBar.surface, ship.colour, ship.shape, 0)
 			
 		textSurface = font.render('Stage {}'.format(statusBar.stage), True, WHITE)
 		textRect = textSurface.get_rect()
@@ -311,8 +309,6 @@ def drawStatusBar():
 
 
 class Debug(object):
-	#global screen
-	
 	def __init__(self):
 		if DEBUG:
 			self.messages = []
