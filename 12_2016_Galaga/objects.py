@@ -10,7 +10,7 @@ from pygame import Rect, Surface
 
 
 
-class Alien(pygame.sprite.Sprite):
+class Alien(object):
 	def __init__(self, alienType, currentPos, formPos, state=ENTERING):
 		pygame.sprite.Sprite.__init__(self)
 		
@@ -105,20 +105,6 @@ class Alien(pygame.sprite.Sprite):
 			else:
 				if self.alienType == BUTTERFLY and self.state == DIVING and self.currentPos.y > self.formation.formationCoord[self.formPos][1]:
 					
-					'''newHeading = max(min(self.heading + random.choice([-15, 15, 0, 0, 0]), 135), 45)				
-					print('heading={} newHeading={}'.format(self.heading, newHeading))
-					print('self.heading={} currentPos.getHeading={} currentPos={}'.format(self.heading, Vector2(*self.currentPos).getHeading(), self.currentPos))
-					diff = Vector2(math.cos(math.radians(newHeading)), math.sin(math.radians(newHeading)))
-					res = Vector2(*self.currentPos) + diff * ALIENSPEED * timePassed 
-					if res.x < ALIENSIZE // 2:
-						res.x = ALIENSIZE // 2
-					elif res.x > VIEWWIDTH - ALIENSIZE // 2:
-						res.x = VIEWWIDTH - ALIENSIZE // 2
-					if res.y > VIEWHEIGHT + ALIENSIZE:
-						res.y = -ALIENSIZE
-						res.x = self.formation.formationCoord[self.formPos][0]
-					self.currentPos = tuple(res)
-					self.setHeading()'''
 					wander = random.randint(1, 2)
 										
 					if self.currentPos.y > VIEWHEIGHT + ALIENSIZE:
@@ -186,6 +172,9 @@ class AlienCollection(object):
 		self.attackers = []
 		self.outsiders = []
 		self.getOutsiders = True
+		
+		self.chanceShooting = 0.04
+		self.chanceDiving = 0.05
 
 	def addAlien(self, alien):
 		self.aliens.append(alien)
@@ -201,6 +190,25 @@ class AlienCollection(object):
 			self.outsiders.remove(alien)
 			self.getOutsiders = True
 		del self.alienInFormation[alien.formPos]
+
+	def resetOriginalFormCoordinates(self):
+		self.formRec = Rect(0, 0, (ALIENSIZE * 1.5) * 9 + ALIENSIZE, (ALIENSIZE * 1.5) * 4 + ALIENSIZE)
+		self.formRec.midbottom = (VIEWWIDTH // 2, VIEWHEIGHT // 2)
+		self.formationCoord = {(r, c): (int(self.formRec.left + ALIENSIZE * c * 1.5 + ALIENSIZE // 2), 
+										int(self.formRec.top + ALIENSIZE * r * 1.5 + ALIENSIZE // 2)) for r in range(5) for c in range(10) }
+		self.step = 4
+		self.directionStep = +1
+		self.speedStep = .5
+		self.timeSpent = .0
+		
+		
+	def checkAliensInFormation(self):
+		allInFormation = True
+		for alien in reversed(self.aliens):
+			if alien.state != IN_FORMATION:
+				allInFormation = False
+				break
+		return allInFormation
 		
 		
 	'''
@@ -240,7 +248,7 @@ class AlienCollection(object):
 					res.append(alien)
 					break
 			 
-		print('res=', res)
+		#print('res=', res)
 		return res
 	
 		
@@ -283,7 +291,7 @@ class AlienCollection(object):
 			pass
 
 
-	def updateAliens(self, timePassed):
+	def updateAliens(self, timePassed, shipState):
 		for alien in self.aliens:
 			if alien.state == DEAD:
 				x, y = alien.shape.get_size()
@@ -324,7 +332,7 @@ class AlienCollection(object):
 			# print('attackers:', self.attackers)
 			for alien in self.attackers:
 				# hard-coded frequency... probably stage-dependent
-				if alien.state == IN_FORMATION and random.random() < 0.05 / len(self.attackers):
+				if alien.state == IN_FORMATION and random.random() < 0.05 / len(self.attackers) and shipState != DEAD:
 					alien.state = DIVING
 					if alien.alienType == BEE:
 						if alien.formPos[1] >= 5:
@@ -369,7 +377,7 @@ class Bolt(object):
 
 		
 
-class Ship(pygame.sprite.Sprite):
+class Ship(object):
 	def __init__(self):
 		self.lives = 3
 		self.state = MOVING
@@ -406,23 +414,28 @@ class Ship(pygame.sprite.Sprite):
 		self.lives -= 1
 		self.state = DEAD
 		self.frame = 1
-
-	def update(self):
+		
+	def readyNewShip(self):
+		self.pos = (VIEWWIDTH // 2, SHIPY)
+		self.shape = self.origShape.copy()
+		self.state = MOVING
+		
+	def update(self, ready=None):
 		for bolt in self.bolts:
 			if bolt.pos[1] - BOLTLENGTH < 0:
 				self.bolts.remove(bolt)
 			
 		if self.state == DEAD:
-			self.shape.fill(BLACK)
-			pygame.draw.circle(self.shape, WHITE, (SHIPSIZE // 2, SHIPSIZE // 2), self.frame, 1)
-			self.frame += 2
-			if self.frame > SHIPSIZE // 2:
-				self.pos = (VIEWWIDTH // 2, SHIPY)
-				if self.lives:
-					self.shape = self.origShape.copy()
-					self.state = MOVING
-				else:
-					self.shape.fill(BLACK)
+			if self.frame < SHIPSIZE // 2:
+				self.shape.fill(BLACK)
+				pygame.draw.circle(self.shape, WHITE, (SHIPSIZE // 2, SHIPSIZE // 2), self.frame, 1)
+				self.frame += 2
+			else:  
+				self.pos = None
+				if not self.lives:
 					self.state = GAMEOVER
+				elif ready:
+					self.readyNewShip()
+				
 	
 	

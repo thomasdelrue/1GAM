@@ -13,8 +13,8 @@ other stages are not, and continue as long as there are aliens on screen
 during that stage...
 
 ---
-and yet, this idea of a playbook might be superfluous... we shall see
-later in development...
+current actions: squad, formed, nothing
+to do: message, differentiate normal stage with a challenging stage...
 
 '''
 
@@ -30,7 +30,7 @@ later in development...
 
 
 
-data = {1: # stage
+'''data = {1: # stage
 		   [	# sequence of events
 		    ['squad', ([(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))], CURVE1_FROM_MIDTOPR), 
 			   		  ([(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))], CURVE1_FROM_MIDTOPL)],
@@ -47,12 +47,35 @@ data = {1: # stage
 		2: [
 			['squad', ([(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))], CURVE1_FROM_MIDTOPR), 
 			   		  ([(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))], CURVE1_FROM_MIDTOPL)],
+			['squad', ([(BUTTERFLY, (1, 3)), (BUTTERFLY, (1, 6)), (BUTTERFLY, (2, 3)), (BUTTERFLY, (2, 6))],CURVE1_FROM_LBOTTOM),
+					  ([(GALAGA, (0, 3)), (GALAGA, (0, 4)), (GALAGA, (0, 5)), (GALAGA, (0, 6))], CURVE2_FROM_LBOTTOM)],
+			['squad', ([(BUTTERFLY, (1, 1)), (BUTTERFLY, (1, 2)), (BUTTERFLY, (2, 1)), (BUTTERFLY, (2, 2))], CURVE1_FROM_RBOTTOM)],
 			['formed']
 		   ],
 		3: [
 			['nothing', ]
 		   ]
-	   }
+	   }'''
+
+data = {1: # stage
+		   [	# sequence of events
+		    ['squad', ([(BEE, (3, 4)), (BEE, (3, 5)), (BEE, (4, 4)), (BEE, (4, 5))], CURVE1_FROM_MIDTOPR), 
+			   		  ([(BUTTERFLY, (1, 4)), (BUTTERFLY, (1, 5)), (BUTTERFLY, (2, 4)), (BUTTERFLY, (2, 5))], CURVE1_FROM_MIDTOPL)],
+			['squad', ([(GALAGA, (0, 3)), (BUTTERFLY, (1, 3)), (GALAGA, (0, 4)), (BUTTERFLY, (1, 6)),
+						(GALAGA, (0, 5)), (BUTTERFLY, (2, 3)), (GALAGA, (0, 6)), (BUTTERFLY, (2, 6))], CURVE1_FROM_LBOTTOM)],
+			['squad', ([(BUTTERFLY, (1, 7)), (BUTTERFLY, (1, 1)), (BUTTERFLY, (1, 8)), (BUTTERFLY, (1, 2)),
+						(BUTTERFLY, (2, 7)), (BUTTERFLY, (2, 1)), (BUTTERFLY, (2, 8)), (BUTTERFLY, (2, 2))], CURVE1_FROM_RBOTTOM)],
+			['squad', ([(BEE, (3, 2)), (BEE, (3, 6)), (BEE, (3, 3)), (BEE, (3, 7)),
+					    (BEE, (4, 2)), (BEE, (4, 6)), (BEE, (4, 3)), (BEE, (4, 7))], CURVE1_FROM_MIDTOPR)],
+			['squad', ([(BEE, (3, 0)), (BEE, (3, 8)), (BEE, (3, 1)), (BEE, (3, 9)),
+						    (BEE, (4, 0)), (BEE, (4, 8)), (BEE, (4, 1)), (BEE, (4, 9))], CURVE1_FROM_MIDTOPL)],
+			['formed']
+		   ],
+		2: [
+			['nothing', ]
+		   ]
+	   }	   
+
 
 class Playbook(object):
 	def __init__(self, aliens, statusBar):
@@ -64,7 +87,11 @@ class Playbook(object):
 		self.dataset = data[self.statusBar.stage]
 
 	
-	def check(self, timePassed):
+	def check(self, timePassed, shipState):
+		
+		# is ship is still dead, halt the playbook for the moment
+		if shipState == DEAD:
+			return
 	
 		if self.currentAction is None:
 			# New action
@@ -73,11 +100,13 @@ class Playbook(object):
 				# finished the stage
 				self.statusBar.stage += 1
 				self.statusBar.changed = True
+				self.aliens.state = FORMING
+				self.aliens.resetOriginalFormCoordinates()
+				self.aliens.chanceShooting += 0.01
 				if self.statusBar.stage in data:
 					self.dataset = data[self.statusBar.stage]
 					self.cursor = 0
-				'''else:
-					return'''
+
 			
 			self.currentAction = self.dataset[self.cursor][0]
 			self.log.message('{}, {}'.format(self.statusBar.stage, self.currentAction))
@@ -90,17 +119,12 @@ class Playbook(object):
 					self.aliens.createSquadron(alienList, typeOfTrajectory, timePassed)
 					
 			if self.currentAction == 'nothing':
-				print('nothing 1!')
+				#print('nothing 1!')
+				pass
 		else:
 			# check status of the current action
 			if self.currentAction == 'squad':
-				# all aliens in formation?
-				allInFormation = True
-				for alien in reversed(self.aliens.aliens):
-					if alien.state != IN_FORMATION:
-						allInFormation = False
-						break
-				if allInFormation:
+				if self.aliens.checkAliensInFormation():
 					self.currentAction = None
 			
 			elif self.currentAction == 'formed':
@@ -115,12 +139,6 @@ class Playbook(object):
 				self.dataset = data[self.statusBar.stage]
 				self.cursor = -1
 				
-				print('nothing 2!')
+				#print('nothing 2!')
 		
 		
-		
-
-if __name__ == '__main__':
-	pb = Playbook()
-	for k in data:
-		print('key={}, value={}'.format(k, data[k]))

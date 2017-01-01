@@ -9,27 +9,21 @@ Galaga-style clone
 '''
 TO DO's:
 
-- if ship is DEAD, aliens returning to formation, READY, then continue...
+- joint formations, like in stage 2...
+- messages: writing text to screen!
 
 - diving, galagas (with/without escort butterflies)
 -- galaga dive (loop), with/without butterfly escort...
-- aliens shooting... homing in on ship  
-
--- getTrajectory use an fixed timePassed variable, and not the 'current' one --> speed-up bug!!
+- aliens shooting: homing in on ship  
 
 -- probably behaviour of non-galagas is different when there is no longer a galaga in formation? Then they
 -- continue to wander... bee swoops down (adjusting towards the player, so it needn't be in the middle of the screen), 
 -- and makes a looping at the bottom to continue, and come again from the top...
 
-
 - scoring
 -- make groups (state ENTERING), if last one of a group is hit, score bonus, display bonus on screen
-
-- writing text to screen!
  
 -- static/moving backdrop
-
-
 
 - GAMEOVER
 
@@ -40,9 +34,7 @@ TO DO's:
 - begin screen: galaga logo
 - end screen: hit/miss
 
-- different levels
-
-- challenging level 3
+- different levels, level 2, challenging level, level 4,...
 
 - new aliens: snakes, scorpions...
 
@@ -115,9 +107,9 @@ def mainGame():
 			if ship.state not in (DEAD, GAMEOVER):
 				if event.type == KEYDOWN:
 					if event.key in LEFT_KEYS:
-						movex -= 1
+						movex = -1
 					if event.key in RIGHT_KEYS:
-						movex += 1
+						movex = +1
 					if event.key in FIRE_KEYS:
 						ship.fireBolt()
 				if joystick:
@@ -142,15 +134,20 @@ def mainGame():
 		# update states
 		scorePoints = 0
 		timePassed = clock.tick(FPS) / 1000.0
+		ready = None
+		# check whether all aliens returned to formation, after dying
+		if ship.state == DEAD:
+			movex = 0
+			ready = aliens.checkAliensInFormation()
 		
-		playbook.check(timePassed)
+		playbook.check(timePassed, ship.state)
 
 		backdrop.moveStars(timePassed)
 				
 		if movex and ship.state == MOVING:
 			ship.move(movex * timePassed * MOVESPEED)
 			
-		ship.update()
+		ship.update(ready)
 		
 		for bolt in ship.bolts:
 			bolt.move(timePassed)
@@ -190,7 +187,7 @@ def mainGame():
 					ship.hit()
 					statusBar.changed = True
 		
-		aliens.updateAliens(timePassed)
+		aliens.updateAliens(timePassed, ship.state)
 		
 		if scorePoints:
 			scoreBoard.addScore(scorePoints)
@@ -240,8 +237,9 @@ def paintWorld():
 			gameScreen.blit(alien.shape, alien.rect)
 
 	# draw ship
-	ship.rect.center = ship.pos
-	gameScreen.blit(ship.shape, ship.rect)
+	if ship.pos:
+		ship.rect.center = ship.pos
+		gameScreen.blit(ship.shape, ship.rect)
 			
 	
 	# make sure explosions are at the foreground,
