@@ -114,18 +114,19 @@ def paintBoard():
     # fromPos
     if fromPos is not None:
         x, y = getCoordFromPos(fromPos)
-        pygame.gfxdraw.filled_circle(screen, x, y, 5, RED)
+        pygame.gfxdraw.filled_circle(screen, x, y, 3, RED)
+        pygame.gfxdraw.aacircle(screen, x, y, 3, RED)
         
         if len(availableMoves) > 0:
-            #print('show availableMoves', availableMoves)
             for move in availableMoves:
                 x2, y2 = getCoordFromPos(move[1])
-                pygame.gfxdraw.circle(screen, x2, y2, 5, RED)
+                pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
         
         if toPos is not None and fromPos != toPos:
             x2, y2 = getCoordFromPos(toPos)
-            pygame.draw.line(screen, RED, (x, y), (x2, y2), 5)
-            pygame.gfxdraw.filled_circle(screen, x2, y2, 5, RED)
+            pygame.gfxdraw.line(screen, x, y, x2, y2, RED)
+            pygame.gfxdraw.filled_circle(screen, x2, y2, 3, RED)
+            pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
 
                   
 ''' x, y coord from a position (row, column)'''
