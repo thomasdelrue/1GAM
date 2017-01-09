@@ -16,6 +16,7 @@ from constants import *
 from pygame.locals import *
 from sys import exit
 
+import timeit
 
 def mainGame():
     global screen, clock, board, fromPos, toPos, timePassed, availableMoves
@@ -35,8 +36,6 @@ def mainGame():
     availableMoves = []
     
     while True:
-        
-        
         checkForQuit()
 
         # player's turn        
@@ -64,7 +63,9 @@ def mainGame():
                     if fromPos and toPos:
                         if (fromPos, toPos) in availableMoves:
                             # make move
-                            board.playMove((fromPos, toPos))
+                            board.state[fromPos] = EMPTY
+                            animateMove(fromPos, toPos)
+                            board.state[toPos] = board.currentPlayer
                         fromPos = None
                         toPos = None
                         
@@ -75,6 +76,8 @@ def mainGame():
 
         paintBoard()        
         pygame.display.update()
+
+
         
 def checkForQuit():
     for event in pygame.event.get():
@@ -84,8 +87,23 @@ def checkForQuit():
         pygame.event.post(event)
 
 
+def animateMove(origin, destination):
+    startx, starty = getCoordFromPos(origin)
+    endx, endy = getCoordFromPos(destination)
     
-def paintBoard():
+    speedRate = FPS // 2
+    
+    stepx = (endx - startx) // speedRate
+    stepy = (endy - starty) // speedRate
+    
+    for i in range(speedRate):
+        checkForQuit()
+        paintBoard(moving=(startx + i * stepx, starty + i * stepy))    
+        pygame.display.update()    
+        clock.tick(FPS)   
+
+    
+def paintBoard(moving=None):
     screen.fill(BGCOLOUR)
     
     pygame.draw.rect(screen, BOARDCOLOUR, (XMARGIN, YMARGIN, BOARDWIDTH + BOARDMARGIN * 2, BOARDHEIGHT + BOARDMARGIN * 2))
@@ -102,31 +120,35 @@ def paintBoard():
     for pos in zip(posrow, poscol):
         x, y = getCoordFromPos(pos)
         pygame.gfxdraw.filled_circle(screen, x, y, STONESIZE, BLACK)
-        pygame.gfxdraw.circle(screen, x, y, STONESIZE, BLACK)
+        pygame.gfxdraw.aacircle(screen, x, y, STONESIZE, BLACK)
         
     posrow, poscol = np.where(board.state == WHITEVAL)
     for pos in zip(posrow, poscol):
         x, y = getCoordFromPos(pos)
         pygame.gfxdraw.filled_circle(screen, x, y, STONESIZE, WHITE)
-        pygame.gfxdraw.circle(screen, x, y, STONESIZE, BLACK)
+        pygame.gfxdraw.aacircle(screen, x, y, STONESIZE, BLACK)
         
-
-    # fromPos
-    if fromPos is not None:
-        x, y = getCoordFromPos(fromPos)
-        pygame.gfxdraw.filled_circle(screen, x, y, 3, RED)
-        pygame.gfxdraw.aacircle(screen, x, y, 3, RED)
+    if moving:
+        pygame.gfxdraw.filled_circle(screen, moving[0], moving[1], STONESIZE, PCOLOUR[board.currentPlayer])
+        pygame.gfxdraw.aacircle(screen, moving[0], moving[1], STONESIZE, BLACK)
         
-        if len(availableMoves) > 0:
-            for move in availableMoves:
-                x2, y2 = getCoordFromPos(move[1])
+    else:
+        # fromPos
+        if fromPos is not None:
+            x, y = getCoordFromPos(fromPos)
+            pygame.gfxdraw.filled_circle(screen, x, y, 3, RED)
+            pygame.gfxdraw.aacircle(screen, x, y, 3, RED)
+            
+            if len(availableMoves) > 0:
+                for move in availableMoves:
+                    x2, y2 = getCoordFromPos(move[1])
+                    pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
+            
+            if toPos is not None and fromPos != toPos:
+                x2, y2 = getCoordFromPos(toPos)
+                pygame.gfxdraw.line(screen, x, y, x2, y2, RED)
+                pygame.gfxdraw.filled_circle(screen, x2, y2, 3, RED)
                 pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
-        
-        if toPos is not None and fromPos != toPos:
-            x2, y2 = getCoordFromPos(toPos)
-            pygame.gfxdraw.line(screen, x, y, x2, y2, RED)
-            pygame.gfxdraw.filled_circle(screen, x2, y2, 3, RED)
-            pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
 
                   
 ''' x, y coord from a position (row, column)'''
