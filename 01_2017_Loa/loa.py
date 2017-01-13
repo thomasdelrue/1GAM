@@ -3,10 +3,14 @@
 - board object using numpy
 - begin/end screen/gui
 - persistence of AI?
+
+
+- rekening houden met als er geen available moves zijn...
 '''
 
 
 import numpy as np
+import random
 import pprint
 import pygame
 import pygame.gfxdraw
@@ -66,11 +70,28 @@ def mainGame():
                             board.state[fromPos] = EMPTY
                             animateMove(fromPos, toPos)
                             board.state[toPos] = board.currentPlayer
+                            board.changePlayer()
                         fromPos = None
                         toPos = None
                         
                     mouseClicked = False                        
-        
+        else:
+            # computer
+            aav = board.allAvailalbleMoves()
+            move = random.choice(aav)
+            if move:
+                fromPos, toPos = move
+                print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
+                board.state[fromPos] = EMPTY
+                animateMove(fromPos, toPos)
+                board.state[toPos] = board.currentPlayer
+                fromPos, toPos = None, None
+            else:
+                # pass
+                pass # display 'Pass' on screen?
+            board.changePlayer()
+
+            
         
         timePassed = clock.tick(FPS) / 1000.0
 

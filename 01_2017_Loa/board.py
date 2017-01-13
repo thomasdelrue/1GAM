@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 
 from constants import *
@@ -19,6 +20,19 @@ class Board(object):
         b[1:-1, 0] = WHITEVAL
         b[1:-1,-1] = WHITEVAL
         return b
+    
+    def allAvailalbleMoves(self):
+        start = datetime.datetime.utcnow()
+         
+        posrow, poscol = np.where(self.state == self.currentPlayer)
+        aav = []
+        for pos in zip(posrow, poscol):
+            aav += self.availableMoves(pos)
+        
+        end = datetime.datetime.utcnow()
+        print('aav time: {}'.format(end - start))
+            
+        return aav
 
     def availableMoves(self, fromPos):
         av = []
@@ -125,6 +139,10 @@ class Board(object):
         
     def checkGroup(self):
         '''
+        only check group for player that made the move, unless stone was taken, then check the other player as well
+        '''
+        '''
+        
         0. check whether there's only one stone left -> is a group -> win condition
         1. add a random stone to checklist
         2. for each stone, check whether there's a neighbour who hasn't been visited yet, for the whole neighbourhood
