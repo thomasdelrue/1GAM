@@ -26,10 +26,10 @@ class Board(object):
         b[3, 6] = WHITEVAL
         '''
         
-        b[6, 2] = BLACKVAL
+        ''''b[6, 2] = BLACKVAL
         b[6, 3] = WHITEVAL
         b[5, 3] = WHITEVAL
-        b[5, 2] = WHITEVAL
+        b[5, 2] = WHITEVAL'''
         
         return b
     
