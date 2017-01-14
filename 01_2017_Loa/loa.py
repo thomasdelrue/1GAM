@@ -37,7 +37,7 @@ def mainGame():
     toPos = None
     
     mouseClicked = False
-    availableMoves = []
+    availableMoves = [] # to do: change this to allAvailableMoves for player...
     
     while True:
         checkForQuit()

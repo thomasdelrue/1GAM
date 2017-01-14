@@ -19,6 +19,18 @@ class Board(object):
         b[-1,1:-1] = BLACKVAL
         b[1:-1, 0] = WHITEVAL
         b[1:-1,-1] = WHITEVAL
+        
+        ''''b[2, 6] = BLACKVAL
+        b[3, 5] = WHITEVAL
+        b[2, 5] = WHITEVAL
+        b[3, 6] = WHITEVAL
+        '''
+        
+        b[6, 2] = BLACKVAL
+        b[6, 3] = WHITEVAL
+        b[5, 3] = WHITEVAL
+        b[5, 2] = WHITEVAL
+        
         return b
     
     def allAvailalbleMoves(self):
@@ -34,6 +46,7 @@ class Board(object):
             
         return aav
 
+    '''bug? kon over wit springen om ander wit te vangen, diagonaal naar linksbeneden'''
     def availableMoves(self, fromPos):
         av = []
         
@@ -83,25 +96,25 @@ class Board(object):
         print('diag \\', self.state.diagonal(fromPos[1] - fromPos[0]))
         #print(np.where(self.state.diagonal(fromPos[1] - fromPos[0]) != EMPTY))
         count = len(np.where(self.state.diagonal(fromPos[1] - fromPos[0]) != EMPTY)[0])
-        #print(count)
+        print(count)
         if fromPos[0] - count >= 0 and fromPos[1] - count >= 0:
             toPos = fromPos[0] - count, fromPos[1] - count
             #print('toPos1', toPos)
             if self.state[toPos] in (EMPTY, -self.currentPlayer):
-                #print('diag1', self.state.diagonal(fromPos[1] - fromPos[0])[toPos[0] + 1:fromPos[0]])
-                if len(np.where(self.state.diagonal(fromPos[1] - fromPos[0])[toPos[0] + 1:fromPos[0]] == -self.currentPlayer)[0]) == 0:
+                #print('diag1', self.state.diagonal(fromPos[1] - fromPos[0])[toPos[1] + 1:fromPos[1]])
+                if len(np.where(self.state.diagonal(fromPos[1] - fromPos[0])[toPos[1] + 1:fromPos[1]] == -self.currentPlayer)[0]) == 0:
                     #print('added1')
                     av.append((fromPos, toPos))
         if fromPos[0] + count <= 7 and fromPos[1] + count <= 7:
             toPos = fromPos[0] + count, fromPos[1] + count
             #print('toPos2', toPos)
             if self.state[toPos] in (EMPTY, -self.currentPlayer):
-                #print('diag2', self.state.diagonal(fromPos[1] - fromPos[0])[fromPos[0] + 1:toPos[0]])
-                if len(np.where(self.state.diagonal(fromPos[1] - fromPos[0])[fromPos[0] + 1:toPos[0]] == -self.currentPlayer)[0]) == 0:
+                #print('diag2', self.state.diagonal(fromPos[1] - fromPos[0])[fromPos[1] + 1:toPos[1]])
+                if len(np.where(self.state.diagonal(fromPos[1] - fromPos[0])[fromPos[1] + 1:toPos[1]] == -self.currentPlayer)[0]) == 0:
                     #print('added2')
                     av.append((fromPos, toPos))
 
-        #print('-----')
+        print('-----')
         flipped = np.fliplr(self.state)
         #import pprint
         #pprint.pprint(flipped)
@@ -114,17 +127,18 @@ class Board(object):
             toPos = fromPos[0] - count, fromPos[1] + count
             print('toPos1', toPos)
             if self.state[toPos] in (EMPTY, -self.currentPlayer):
-                print('diag1', flipped.diagonal(7 - fromPos[0] - fromPos[1])[toPos[0] + 1:fromPos[0]])
-                if len(np.where(flipped.diagonal(7 - fromPos[0] - fromPos[1])[toPos[0] + 1:fromPos[0]] == -self.currentPlayer)[0]) == 0:
+                print('diag1', flipped.diagonal(7 - fromPos[0] - fromPos[1])[7 - toPos[1] + 1:7 - fromPos[1]])
+                if len(np.where(flipped.diagonal(7 - fromPos[0] - fromPos[1])[7 - toPos[1] + 1:7 - fromPos[1]] == -self.currentPlayer)[0]) == 0:
                     print('added1')
                     av.append((fromPos, toPos))
         if fromPos[0] + count <= 7 and fromPos[1] - count >= 0:
             toPos = fromPos[0] + count, fromPos[1] - count
             print('toPos2', toPos)
             if self.state[toPos] in (EMPTY, -self.currentPlayer):
-                print('diag2', flipped.diagonal(7 - fromPos[0] - fromPos[1])[fromPos[0] + 1:toPos[0]])
-                if len(np.where(flipped.diagonal(7 - fromPos[0] - fromPos[1])[fromPos[0] + 1:toPos[0]] == -self.currentPlayer)[0]) == 0:
-                    print('added2')
+                print('diag2 whole', flipped.diagonal(7 - fromPos[0] - fromPos[1]))
+                print('diag2 truncated', flipped.diagonal(7 - fromPos[0] - fromPos[1])[7 - fromPos[1] + 1:7 - toPos[1]])
+                if len(np.where(flipped.diagonal(7 - fromPos[0] - fromPos[1])[7 - fromPos[1] + 1:7 - toPos[1]] == -self.currentPlayer)[0]) == 0:
+                    print('added2: {}-{}'.format(fromPos, toPos))
                     av.append((fromPos, toPos))
         
         return av
