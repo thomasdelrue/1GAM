@@ -69,7 +69,9 @@ def mainGame():
                             # make move
                             board.state[fromPos] = EMPTY
                             animateMove(fromPos, toPos)
+                            board.stoneTaken = (board.state[toPos] == -board.currentPlayer)
                             board.state[toPos] = board.currentPlayer
+                            board.checkGroup()
                             board.changePlayer()
                         fromPos = None
                         toPos = None
@@ -84,6 +86,7 @@ def mainGame():
                 print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
                 board.state[fromPos] = EMPTY
                 animateMove(fromPos, toPos)
+                board.stoneTaken = (board.state[toPos] == -board.currentPlayer)                    
                 board.state[toPos] = board.currentPlayer
                 fromPos, toPos = None, None
             else:
