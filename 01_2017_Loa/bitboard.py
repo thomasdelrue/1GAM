@@ -259,7 +259,7 @@ class BitBoard(object):
                         continue
                     if current % 8 == 0 and i in [-9, -1, 7]:
                         continue
-                    if (current - 1) % 8 == 0 and i in [9, 1, -7]:
+                    if (current + 1) % 8 == 0 and i in [9, 1, -7]:
                         continue                    
                     
                     
@@ -318,15 +318,15 @@ class BitBoard(object):
         else:
             p = player
             
-        '''print('st={}'.format(st))
-        print('move[0]={}'.format(move[0]))'''
+        me = st[p]
+        you = st[-p]
         
-        st[p] ^= 2 ** move[0]  
-        self.stoneTaken = bool(st[-p] & move[1])             
-        st[p] ^= 2 ** move[1]
+        me ^= 2 ** move[0]  
+        self.stoneTaken = bool(you & move[1])             
+        me ^= 2 ** move[1]
         
-        return st    
-
+        return { p: me, -p: you }
+    
     
     def unmakeMove(self, move, state=None, player=None):
         if state is None:

@@ -33,6 +33,11 @@ class Mcts(object):
     def getPlay2(self):
         self.maxDepth = 0
         state = self.board.state.copy()
+        
+        '''print('beginning play...')
+        print('-1: {}'.format(self.board.bitString(state[-1])))
+        print('1: {}'.format(self.board.bitString(state[1])))'''
+        
         player = self.board.currentPlayer
         available = self.board.allAvailableMoves()
         random.shuffle(available)
@@ -54,6 +59,13 @@ class Mcts(object):
         
         line = '\ngames: %d time elapsed: %s' % (games, str(datetime.datetime.utcnow() - begin))
         print(line)
+        
+        '''print('after simulation...')
+        for p, sb, sw, move in self.plays:
+            print('{} {} {} {}'.format(p, self.board.bitString(sb), self.board.bitString(sw), move))
+            
+        print('-1: {}'.format(self.board.bitString(state[-1])))
+        print('1: {}'.format(self.board.bitString(state[1])))'''
         
         # pick the move with the highest percentage of wins
         percentWins, move = max(
@@ -124,6 +136,7 @@ class Mcts(object):
                     #print(line)
                 
                 nextState = self.board.makeMove(move, state, player)
+                #self.board.unmakeMove(move, state, player)
             #statesCopy.append(state)
             
             ''' 'player' refers to player who moved
@@ -185,9 +198,10 @@ if __name__ == '__main__':
     mcts = Mcts(b)
     mcts.runSimulation2()'''
     
-    while not b.isGameOver():
+    while not b.isGameOver(player=-b.currentPlayer):
         move = mcts.getPlay2()
-        b.makeMove(move)
+        b.state = b.makeMove(move)
+        print(b)
         b.changePlayer()
         
     print('winner: {}'.format(b.winner))
