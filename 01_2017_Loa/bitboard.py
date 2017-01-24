@@ -208,8 +208,9 @@ class BitBoard(object):
             for i in range(start, -1, -8):
                 mask |= 2 ** i 
         elif mtype == 'ldiag':
-            start = 63 - idx if idx >= 0 else (8 + idx) * 8 - 1 
-            for i in range(start, -1, -9):
+            start = 63 - idx if idx >= 0 else (8 + idx) * 8 - 1
+            end = -1 if idx < 0 else start - (8 - idx) * 9 
+            for i in range(start, end, -9):
                 mask |= 2 ** i  
         elif mtype == 'rdiag':
             #print('rdiag')
@@ -368,11 +369,11 @@ if __name__ == '__main__':
         print(bb.bitString(bb.rows[r]))
     for c in bb.cols:
         print(bb.bitString(bb.cols[c]))'''
-    '''for ld in range(-7, 8):
-        print(bb.bitString(bb.ldiag[ld]))
+    for ld in range(-7, 8):
+        print(ld, ' --- ', bb.bitString(bb.ldiag[ld]))
     print('----')      
     for rd in range(7, -8, -1):
-        print(rd,' --- ', bb.bitString(bb.rdiag[rd]))'''        
+        print(rd,' --- ', bb.bitString(bb.rdiag[rd]))        
         
     '''print('----- check between 61 and 57')
     start = 2 ** 62 - 1

@@ -74,7 +74,7 @@ def mainGame():
                         #mousex, mousey = event.pos
                         fromPos = None
                         pos = getPosFromCoord(*event.pos)
-                        if pos and board.state[pos] == board.currentPlayer:
+                        if pos and board.state[board.currentPlayer] & 2 ** pos:
                             fromPos = pos
                             #availableMoves = board.availableMoves(fromPos)
                         else:
@@ -86,10 +86,12 @@ def mainGame():
                         if fromPos and toPos:
                             if (fromPos, toPos) in availableMoves:
                                 # make move
-                                board.state[fromPos] = EMPTY
+                                board.state[board.currentPlayer] ^= 2 ** fromPos
                                 animateMove(fromPos, toPos)
-                                board.stoneTaken = (board.state[toPos] == -board.currentPlayer)
-                                board.state[toPos] = board.currentPlayer
+                                board.stoneTaken = (board.state[-board.currentPlayer] & 2 ** toPos)
+                                if board.stoneTaken:
+                                    board.state[-board.currentPlayer] ^= 2 ** toPos
+                                board.state[board.currentPlayer] ^= 2 ** toPos
                                 gameOver = board.isGameOver()
                                 board.changePlayer()
                                 availableMoves = board.allAvailableMoves()
@@ -104,10 +106,12 @@ def mainGame():
                     
                     fromPos, toPos = ai.getPlay()
                     print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
-                    board.state[fromPos] = EMPTY
+                    board.state[board.currentPlayer] ^= 2 ** fromPos
                     animateMove(fromPos, toPos)
-                    board.stoneTaken = (board.state[toPos] == -board.currentPlayer)                    
-                    board.state[toPos] = board.currentPlayer
+                    board.stoneTaken = (board.state[-board.currentPlayer] & 2 ** toPos)
+                    if board.stoneTaken:
+                        board.state[-board.currentPlayer] ^= 2 ** toPos
+                    board.state[board.currentPlayer] ^= 2 ** toPos
                     fromPos, toPos = None, None
                     gameOver = board.isGameOver()
                 else:
@@ -115,7 +119,7 @@ def mainGame():
                 board.changePlayer()
                 availableMoves = board.allAvailableMoves()
             
-            mcts.runSimulation()
+            ai.runSimulation()
             timePassed = clock.tick(FPS) / 1000.0
     
             paintBoard()        
@@ -171,17 +175,20 @@ def paintBoard(moving=None):
                                         (WINDOWWIDTH - XMARGIN - BOARDMARGIN, YMARGIN + BOARDMARGIN + i * BOXSIZE), 1)
 
     # stones
-    posrow, poscol = np.where(board.state == BLACKVAL)
-    for pos in zip(posrow, poscol):
+    pos = gmpy2.bit_scan1(board.state[BLACKVAL])
+    while pos is not None:
         x, y = getCoordFromPos(pos)
         pygame.gfxdraw.filled_circle(screen, x, y, STONESIZE, BLACK)
         pygame.gfxdraw.aacircle(screen, x, y, STONESIZE, BLACK)
+        pos = gmpy2.bit_scan1(board.state[BLACKVAL], pos + 1)
+
         
-    posrow, poscol = np.where(board.state == WHITEVAL)
-    for pos in zip(posrow, poscol):
+    pos = gmpy2.bit_scan1(board.state[WHITEVAL])
+    while pos is not None:
         x, y = getCoordFromPos(pos)
         pygame.gfxdraw.filled_circle(screen, x, y, STONESIZE, WHITE)
         pygame.gfxdraw.aacircle(screen, x, y, STONESIZE, BLACK)
+        pos = gmpy2.bit_scan1(board.state[WHITEVAL], pos + 1)
         
     if moving:
         pygame.gfxdraw.filled_circle(screen, moving[0], moving[1], STONESIZE, PCOLOUR[board.currentPlayer])
@@ -195,6 +202,7 @@ def paintBoard(moving=None):
             pygame.gfxdraw.aacircle(screen, x, y, 3, RED)
             
             if len(availableMoves) > 0:
+                #print('selected/availableMoves={}'.format(availableMoves))
                 for move in availableMoves:
                     if fromPos == move[0]:
                         x2, y2 = getCoordFromPos(move[1])
@@ -209,7 +217,10 @@ def paintBoard(moving=None):
                   
 ''' x, y coord from a position (row, column)'''
 def getCoordFromPos(pos):
-    return XMARGIN + BOARDMARGIN + pos[1] * BOXSIZE + BOXSIZE // 2, YMARGIN + BOARDMARGIN + pos[0] * BOXSIZE + BOXSIZE // 2  
+    row = 7 - pos // 8 
+    col = 7 - pos % 8
+    return XMARGIN + BOARDMARGIN + col * BOXSIZE + BOXSIZE // 2, YMARGIN + BOARDMARGIN + row * BOXSIZE + BOXSIZE // 2
+  
 
 
 ''' position (row, column) from a x, y coord'''
@@ -218,7 +229,11 @@ def getPosFromCoord(x, y):
         y < YMARGIN + BOARDMARGIN or y >= WINDOWHEIGHT - YMARGIN - BOARDMARGIN):
         return None
     
-    return (y - YMARGIN - BOARDMARGIN) // BOXSIZE, (x - XMARGIN - BOARDMARGIN) // BOXSIZE  
+    pos = (y - YMARGIN - BOARDMARGIN) // BOXSIZE, (x - XMARGIN - BOARDMARGIN) // BOXSIZE
+    #print('pos={}'.format(pos))
+    newPos = 8 * (7 - pos[0]) + 7 - pos[1] 
+    #print('newPos={}'.format(newPos))
+    return newPos  
                       
 ''' timing in seconds '''
 def printText(text, timing):
