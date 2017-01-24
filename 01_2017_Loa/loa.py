@@ -9,97 +9,128 @@
 '''
 
 
-import numpy as np
+import mcts
+import gmpy2
 import random
 import pprint
 import pygame
 import pygame.gfxdraw
 
-from board import *
+from bitboard import *
 from constants import *
 from pygame.locals import *
 from sys import exit
 
-import timeit
+'''import timeit
+from time import sleep'''
+
 
 def mainGame():
-    global screen, clock, board, fromPos, toPos, timePassed, availableMoves
+    global screen, clock, board, fromPos, toPos, timePassed, availableMoves, basicFont 
     
     pygame.init()
     screen = pygame.display.set_mode(SCREENSIZE, 0, 32)
     pygame.display.set_caption("Lines of Action")
     
+    basicFont = pygame.font.SysFont("Arial", FONTSIZE)
+    
     clock = pygame.time.Clock()
     
-    board = Board()
+    board = BitBoard()
+    ai = mcts.Mcts(board) 
     
     fromPos = None
     toPos = None
     
     mouseClicked = False
-    availableMoves = [] # to do: change this to allAvailableMoves for player...
+    availableMoves = board.allAvailableMoves()
+    
+    printText('Welcome to a game of Lines of Action', 2)
+    
+    gameOver = False
     
     while True:
         checkForQuit()
 
-        # player's turn        
-        if P[board.currentPlayer] == PLAYER: 
-            for event in pygame.event.get():
-                if event.type == MOUSEMOTION:
-                    #mousex, mousey = event.pos
-                    #print(getPosFromCoord(*event.pos))
-                    if mouseClicked and fromPos is not None:
-                        toPos = getPosFromCoord(*event.pos)
-                        print('-toPos:', toPos)
-                
-                elif event.type == MOUSEBUTTONDOWN:
-                    #mousex, mousey = event.pos
-                    fromPos = None
-                    pos = getPosFromCoord(*event.pos)
-                    if pos and board.state[pos] == board.currentPlayer:
-                        fromPos = pos
-                        availableMoves = board.availableMoves(fromPos)
-                    else:
-                        availableMoves = []
-                    mouseClicked = True
-                
-                elif event.type == MOUSEBUTTONUP:
-                    if fromPos and toPos:
-                        if (fromPos, toPos) in availableMoves:
-                            # make move
-                            board.state[fromPos] = EMPTY
-                            animateMove(fromPos, toPos)
-                            board.stoneTaken = (board.state[toPos] == -board.currentPlayer)
-                            board.state[toPos] = board.currentPlayer
-                            board.checkGroup()
-                            board.changePlayer()
+        
+        ''' check whether Game Over, by checkGroup for both players?'''
+        if not gameOver:
+            # player's turn        
+            if P[board.currentPlayer] == PLAYER:
+                if len(availableMoves) == 0:
+                    printText('{} needs to pass'.format(PLAYER), 1)                
+                    board.changePlayer()
+                    availableMoves = board.allAvailableMoves()
+                 
+                for event in pygame.event.get():
+                    if event.type == MOUSEMOTION:
+                        #mousex, mousey = event.pos
+                        #print(getPosFromCoord(*event.pos))
+                        if mouseClicked and fromPos is not None:
+                            toPos = getPosFromCoord(*event.pos)
+                            #print('-toPos:', toPos)
+                            
+                    elif event.type == MOUSEBUTTONDOWN:
+                        #mousex, mousey = event.pos
                         fromPos = None
-                        toPos = None
-                        
-                    mouseClicked = False                        
-        else:
-            # computer
-            aav = board.allAvailalbleMoves()
-            move = random.choice(aav)
-            if move:
-                fromPos, toPos = move
-                print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
-                board.state[fromPos] = EMPTY
-                animateMove(fromPos, toPos)
-                board.stoneTaken = (board.state[toPos] == -board.currentPlayer)                    
-                board.state[toPos] = board.currentPlayer
-                fromPos, toPos = None, None
+                        pos = getPosFromCoord(*event.pos)
+                        if pos and board.state[pos] == board.currentPlayer:
+                            fromPos = pos
+                            #availableMoves = board.availableMoves(fromPos)
+                        else:
+                            #availableMoves = []
+                            pass
+                        mouseClicked = True
+                    
+                    elif event.type == MOUSEBUTTONUP:
+                        if fromPos and toPos:
+                            if (fromPos, toPos) in availableMoves:
+                                # make move
+                                board.state[fromPos] = EMPTY
+                                animateMove(fromPos, toPos)
+                                board.stoneTaken = (board.state[toPos] == -board.currentPlayer)
+                                board.state[toPos] = board.currentPlayer
+                                gameOver = board.isGameOver()
+                                board.changePlayer()
+                                availableMoves = board.allAvailableMoves()
+                            fromPos = None
+                            toPos = None
+                            
+                        mouseClicked = False                        
             else:
-                # pass
-                pass # display 'Pass' on screen?
-            board.changePlayer()
+                # computer
+                if len(availableMoves) > 0:
+                    #fromPos, toPos = random.choice(availableMoves)
+                    
+                    fromPos, toPos = ai.getPlay()
+                    print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
+                    board.state[fromPos] = EMPTY
+                    animateMove(fromPos, toPos)
+                    board.stoneTaken = (board.state[toPos] == -board.currentPlayer)                    
+                    board.state[toPos] = board.currentPlayer
+                    fromPos, toPos = None, None
+                    gameOver = board.isGameOver()
+                else:
+                    printText('{} needs to pass'.format(COMPUTER), 1)
+                board.changePlayer()
+                availableMoves = board.allAvailableMoves()
+            
+            mcts.runSimulation()
+            timePassed = clock.tick(FPS) / 1000.0
+    
+            paintBoard()        
+            pygame.display.update()
 
+
+        else: #game over
+            if board.winner:
+                winTxt = '{} won.'.format(P[board.winner])
+            else:
+                winTxt = 'Draw.'
+            printText('Game over. '+ winTxt, 3)
+            
             
         
-        timePassed = clock.tick(FPS) / 1000.0
-
-        paintBoard()        
-        pygame.display.update()
 
 
         
@@ -165,8 +196,9 @@ def paintBoard(moving=None):
             
             if len(availableMoves) > 0:
                 for move in availableMoves:
-                    x2, y2 = getCoordFromPos(move[1])
-                    pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
+                    if fromPos == move[0]:
+                        x2, y2 = getCoordFromPos(move[1])
+                        pygame.gfxdraw.aacircle(screen, x2, y2, 3, RED)
             
             if toPos is not None and fromPos != toPos:
                 x2, y2 = getCoordFromPos(toPos)
@@ -188,6 +220,21 @@ def getPosFromCoord(x, y):
     
     return (y - YMARGIN - BOARDMARGIN) // BOXSIZE, (x - XMARGIN - BOARDMARGIN) // BOXSIZE  
                       
+''' timing in seconds '''
+def printText(text, timing):
+    textSurf = basicFont.render(text, True, BLACK)
+    textRect = textSurf.get_rect()
+    textRect.center = TEXTPOS
+    
+    start = datetime.datetime.utcnow()
+    
+    while datetime.datetime.utcnow() - start <= datetime.timedelta(seconds=timing):
+        paintBoard()    
+        screen.blit(textSurf, textRect)
+        pygame.display.update()
+    
+    
+    
 
 
 if __name__ == '__main__':

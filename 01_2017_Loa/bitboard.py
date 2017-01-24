@@ -347,6 +347,10 @@ class BitBoard(object):
         st[p] ^= 2 ** move[0]  
         
         return st    
+    
+    ''' heuristic evaluation function of the board'''
+    def evaluate(self):
+        pass
         
 
 if __name__ == '__main__':

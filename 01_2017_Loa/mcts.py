@@ -30,7 +30,7 @@ class Mcts(object):
         self.totalSimulations = 0
         
     
-    def getPlay2(self):
+    def getPlay(self):
         self.maxDepth = 0
         state = self.board.state.copy()
         
@@ -52,7 +52,7 @@ class Mcts(object):
         games = 0        
         begin = datetime.datetime.utcnow()
         while datetime.datetime.utcnow() - begin < datetime.timedelta(seconds=self.calculationTime):
-            self.runSimulation2()
+            self.runSimulation()
             games += 1
             
         #movesStates = [(p, stateState(self.board.playMove(p, state, player))) for p in available]
@@ -93,7 +93,7 @@ class Mcts(object):
 
 
 
-    def runSimulation2(self):
+    def runSimulation(self):
         start = datetime.datetime.utcnow()
         
         plays, wins = self.plays, self.wins
@@ -182,10 +182,7 @@ class Mcts(object):
         '''pprint.pprint(plays)'''
 
 
-    
-    
-    
-if __name__ == '__main__':
+def test():    
     b = bitboard.BitBoard()
     print(b)
     mcts = Mcts(b)
@@ -199,9 +196,13 @@ if __name__ == '__main__':
     mcts.runSimulation2()'''
     
     while not b.isGameOver(player=-b.currentPlayer):
-        move = mcts.getPlay2()
+        move = mcts.getPlay()
         b.state = b.makeMove(move)
         print(b)
         b.changePlayer()
         
     print('winner: {}'.format(b.winner))
+    
+    
+if __name__ == '__main__':
+    test()
