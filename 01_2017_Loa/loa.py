@@ -1,13 +1,15 @@
 '''
-- mcts
-- board object using numpy
-- begin/end screen/gui
-- persistence of AI?
+Lines of Action
+---------------
+
+- not yet implemented: pass moves? probably bugs the ai too  
+- bug: deciding winner...
+- to do: gui, sound, smarten up ai
+
+- saving winning moves?
 
 
-- rekening houden met als er geen available moves zijn...
 '''
-
 
 import mcts
 import gmpy2
@@ -21,16 +23,16 @@ from constants import *
 from pygame.locals import *
 from sys import exit
 
-'''import timeit
-from time import sleep'''
-
 
 def mainGame():
-    global screen, clock, board, fromPos, toPos, timePassed, availableMoves, basicFont 
+    global screen, clock, board, fromPos, toPos, timePassed, availableMoves, basicFont, ai
     
     pygame.init()
     screen = pygame.display.set_mode(SCREENSIZE, 0, 32)
     pygame.display.set_caption("Lines of Action")
+    
+    player_cursor = pygame.mouse.get_cursor()
+    
     
     basicFont = pygame.font.SysFont("Arial", FONTSIZE)
     
@@ -46,6 +48,16 @@ def mainGame():
     availableMoves = board.allAvailableMoves()
     
     printText('Welcome to a game of Lines of Action', 2)
+    
+    toss = [BLACKVAL, WHITEVAL]
+    random.shuffle(toss)
+    print(toss)
+    P[toss[0]] = PLAYER
+    P[toss[1]] = COMPUTER
+    printText("{} is black and {} is white. Black begins.".format(P[BLACKVAL], P[WHITEVAL]), 2)
+    
+    if P[board.currentPlayer] == COMPUTER:
+        pygame.mouse.set_cursor(*computer_cursor) 
     
     gameOver = False
     
@@ -95,6 +107,7 @@ def mainGame():
                                 gameOver = board.isGameOver()
                                 board.changePlayer()
                                 availableMoves = board.allAvailableMoves()
+                                pygame.mouse.set_cursor(*computer_cursor)
                             fromPos = None
                             toPos = None
                             
@@ -105,7 +118,7 @@ def mainGame():
                     #fromPos, toPos = random.choice(availableMoves)
                     
                     fromPos, toPos = ai.getPlay()
-                    print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
+                    #print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
                     board.state[board.currentPlayer] ^= 2 ** fromPos
                     animateMove(fromPos, toPos)
                     board.stoneTaken = (board.state[-board.currentPlayer] & 2 ** toPos)
@@ -118,6 +131,7 @@ def mainGame():
                     printText('{} needs to pass'.format(COMPUTER), 1)
                 board.changePlayer()
                 availableMoves = board.allAvailableMoves()
+                pygame.mouse.set_cursor(*player_cursor)
             
             ai.runSimulation()
             timePassed = clock.tick(FPS) / 1000.0
@@ -127,6 +141,7 @@ def mainGame():
 
 
         else: #game over
+            pygame.mouse.set_cursor(*player_cursor)
             if board.winner:
                 winTxt = '{} won.'.format(P[board.winner])
             else:
@@ -134,16 +149,16 @@ def mainGame():
             printText('Game over. '+ winTxt, 3)
             
             
-        
-
 
         
 def checkForQuit():
     for event in pygame.event.get():
         if event.type == QUIT or (event.type == KEYDOWN and 
                                   event.key == K_ESCAPE):
+            ai.saveKnowledgeTree()
             exit()
         pygame.event.post(event)
+
 
 
 def animateMove(origin, destination):
@@ -222,20 +237,24 @@ def getCoordFromPos(pos):
     return XMARGIN + BOARDMARGIN + col * BOXSIZE + BOXSIZE // 2, YMARGIN + BOARDMARGIN + row * BOXSIZE + BOXSIZE // 2
   
 
-
-''' position (row, column) from a x, y coord'''
+''' calculates the position on the board from a x, y coord'''
 def getPosFromCoord(x, y):
     if (x < XMARGIN + BOARDMARGIN or x >= WINDOWWIDTH - XMARGIN - BOARDMARGIN or 
         y < YMARGIN + BOARDMARGIN or y >= WINDOWHEIGHT - YMARGIN - BOARDMARGIN):
         return None
-    
+
+    # calculates row, column from coordinates    
     pos = (y - YMARGIN - BOARDMARGIN) // BOXSIZE, (x - XMARGIN - BOARDMARGIN) // BOXSIZE
     #print('pos={}'.format(pos))
+    
+    # calculates pos number (63 - 0) from a row, column-pair
     newPos = 8 * (7 - pos[0]) + 7 - pos[1] 
     #print('newPos={}'.format(newPos))
+
     return newPos  
+
                       
-''' timing in seconds '''
+''' prints Text, for an amount of time. timing in seconds '''
 def printText(text, timing):
     textSurf = basicFont.render(text, True, BLACK)
     textRect = textSurf.get_rect()
@@ -247,8 +266,6 @@ def printText(text, timing):
         paintBoard()    
         screen.blit(textSurf, textRect)
         pygame.display.update()
-    
-    
     
 
 

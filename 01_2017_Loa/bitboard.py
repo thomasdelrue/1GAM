@@ -3,6 +3,7 @@ import gmpy2
 
 from constants import *
 
+
 class BitBoard(object):
     def __init__(self):
         self.state = self.newBoard()

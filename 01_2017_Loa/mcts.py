@@ -8,6 +8,8 @@ import math
 import random
 import pprint
 
+import pickle
+
 '''
 notes:
 - keep in mind that it might be possible to pass: be sure to make that move also: i.e. save the nextState also,
@@ -15,6 +17,9 @@ notes:
 - first get a simple mcts going, then try to implement the ideas of the article...
 
 - no copies in memory, make and UNMAKE the move...
+
+
+- pickle: to do: only save those entries where nr of wins <> 0?
 '''
 
 class Mcts(object):
@@ -29,6 +34,45 @@ class Mcts(object):
         
         self.totalSimulations = 0
         
+        self.loadKnowledgeTree()
+        
+        
+    def loadKnowledgeTree(self):
+        '''try:
+            with open('plays.data', 'rb') as p:
+                self.plays = pickle.load(p)
+                print('\nloaded plays. {} entries'.format(len(self.plays)))
+        except FileNotFoundError:
+            print('\nno plays.data')'''
+            
+        try:
+            with open('wins.data', 'rb') as w:
+                self.wins = pickle.load(w)
+                self.plays = self.wins.copy()
+                print('\nloaded wins. {} entries'.format(len(self.wins)))
+        except FileNotFoundError:
+            print('no wins.data\n')            
+        
+    
+    def saveKnowledgeTree(self):
+        '''try:
+            with open('plays.data', 'wb') as p:
+                pickle.dump(self.plays, p)
+                print('\nsaved plays. {} entries'.format(len(self.plays)))
+        except:
+            print('\ncould not save plays')''' 
+    
+        saveWins = { k: self.wins[k] for k in self.wins if self.wins[k] != 0 }
+        import pprint
+        pprint.pprint(saveWins)
+        
+        try:
+            with open('wins.data', 'wb') as w:
+                pickle.dump(saveWins, w)
+                print('saved wins. {} entries'.format(len(saveWins)))
+        except:
+            print('could not save wins') 
+    
     
     def getPlay(self):
         self.maxDepth = 0
@@ -139,6 +183,9 @@ class Mcts(object):
                 #self.board.unmakeMove(move, state, player)
             #statesCopy.append(state)
             
+            else:
+                move = None
+            
             ''' 'player' refers to player who moved
             into that particular state.'''
             if expand and (player, state[-1], state[1], move) not in plays:
@@ -149,7 +196,8 @@ class Mcts(object):
                     self.maxDepth = t
                     
                 ''' hier 1-ply lookahead doen, op zoek naar een winner, indien winner(s?),
-                backpropagation, en simulatie stoppen...                
+                backpropagation, en simulatie stoppen... nee, niet enkel bij expand maar bij selection?
+                voor iedere leaf node van de player to move...              
                 '''
             
             visitedStates.add((player, state[-1], state[1], move))
@@ -203,6 +251,9 @@ def test():
         
     print('winner: {}'.format(b.winner))
     
+    mcts.saveKnowledgeTree()
+    
+
     
 if __name__ == '__main__':
     test()

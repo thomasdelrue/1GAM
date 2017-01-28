@@ -1,8 +1,4 @@
-'''
-Created on 2-jan.-2017
 
-@author: thomas
-'''
 
 WINDOWWIDTH = 800
 WINDOWHEIGHT = 600
@@ -24,7 +20,6 @@ FPS = 30
 
 BLACKVAL = -1
 WHITEVAL = 1
-EMPTY = 0
 
 PLAYER = 'Player'
 COMPUTER = 'Computer'
@@ -39,3 +34,46 @@ P = { BLACKVAL: PLAYER,
       WHITEVAL: COMPUTER }
 PCOLOUR = { BLACKVAL: BLACK, 
             WHITEVAL: WHITE }
+
+hourglass_strings_orig = (
+  "oooooooooooooooo",
+  " oo          oo ",
+  " oo          oo ",
+  " oo          oo ",
+  "  oo        oo  ",
+  "   oo      oo   ",
+  "     oo  oo     ",
+  "       oo       ",
+  "       oo       ",
+  "     oo  oo     ",
+  "   oo      oo   ",
+  "  oo        oo  ",
+  " oo          oo ",
+  " oo          oo ",
+  " oo          oo ",
+  "oooooooooooooooo",
+)
+
+hourglass_strings = (
+  "............... ",
+  ".XXXXXXXXXXXXX. ",
+  " .X         X.  ",
+  " .X         X.  ",
+  "  .X X X X X.   ",
+  "   .X X X X.    ",
+  "    .X X X.     ",
+  "      .X.       ",
+  "    .X X X.     ",
+  "   .X  X  X.    ",
+  "  .X   X   X.   ",
+  " .X   X X   X.  ",
+  " .X XX X XX X.  ",
+  ".XXXXXXXXXXXXX. ",
+  "............... ",
+  "                ",
+)
+
+
+import pygame
+_hg_cursor, _hg_mask = pygame.cursors.compile(hourglass_strings)
+computer_cursor = ((16, 16), (5, 1), _hg_cursor, _hg_mask)
