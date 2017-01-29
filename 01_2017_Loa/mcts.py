@@ -14,12 +14,6 @@ import pickle
 notes:
 - keep in mind that it might be possible to pass: be sure to make that move also: i.e. save the nextState also,
   which will be identical to the current state
-- first get a simple mcts going, then try to implement the ideas of the article...
-
-- no copies in memory, make and UNMAKE the move...
-
-
-- pickle: to do: only save those entries where nr of wins <> 0?
 '''
 
 class Mcts(object):
@@ -38,33 +32,32 @@ class Mcts(object):
         
         
     def loadKnowledgeTree(self):
-        '''try:
+        try:
             with open('plays.data', 'rb') as p:
                 self.plays = pickle.load(p)
                 print('\nloaded plays. {} entries'.format(len(self.plays)))
         except FileNotFoundError:
-            print('\nno plays.data')'''
+            print('\nno plays.data')
             
         try:
             with open('wins.data', 'rb') as w:
                 self.wins = pickle.load(w)
-                self.plays = self.wins.copy()
                 print('\nloaded wins. {} entries'.format(len(self.wins)))
         except FileNotFoundError:
             print('no wins.data\n')            
         
     
     def saveKnowledgeTree(self):
-        '''try:
+        savePlays = { k: self.plays[k] for k in self.plays if self.wins[k] != 0 }
+        
+        try:
             with open('plays.data', 'wb') as p:
-                pickle.dump(self.plays, p)
-                print('\nsaved plays. {} entries'.format(len(self.plays)))
+                pickle.dump(savePlays, p)
+                print('\nsaved plays. {} entries'.format(len(savePlays)))
         except:
-            print('\ncould not save plays')''' 
+            print('\ncould not save plays') 
     
         saveWins = { k: self.wins[k] for k in self.wins if self.wins[k] != 0 }
-        import pprint
-        pprint.pprint(saveWins)
         
         try:
             with open('wins.data', 'wb') as w:
@@ -77,10 +70,6 @@ class Mcts(object):
     def getPlay(self):
         self.maxDepth = 0
         state = self.board.state.copy()
-        
-        '''print('beginning play...')
-        print('-1: {}'.format(self.board.bitString(state[-1])))
-        print('1: {}'.format(self.board.bitString(state[1])))'''
         
         player = self.board.currentPlayer
         available = self.board.allAvailableMoves()
@@ -99,17 +88,8 @@ class Mcts(object):
             self.runSimulation()
             games += 1
             
-        #movesStates = [(p, stateState(self.board.playMove(p, state, player))) for p in available]
-        
         line = '\ngames: %d time elapsed: %s' % (games, str(datetime.datetime.utcnow() - begin))
         print(line)
-        
-        '''print('after simulation...')
-        for p, sb, sw, move in self.plays:
-            print('{} {} {} {}'.format(p, self.board.bitString(sb), self.board.bitString(sw), move))
-            
-        print('-1: {}'.format(self.board.bitString(state[-1])))
-        print('1: {}'.format(self.board.bitString(state[1])))'''
         
         # pick the move with the highest percentage of wins
         percentWins, move = max(
@@ -117,8 +97,6 @@ class Mcts(object):
              self.plays.get((player, state[-1], state[1], move), 1), move)
             for move in available
         )
-        
-        ''' indien een move nog geen 5 of meer plays gekregen heeft, werken met een evaluatie functie? '''
         
         line = "best move: %s %%chance of winning: %f" % (str(move), percentWins)
         print(line)
@@ -138,25 +116,22 @@ class Mcts(object):
 
 
     def runSimulation(self):
-        start = datetime.datetime.utcnow()
+        #start = datetime.datetime.utcnow()
         
         plays, wins = self.plays, self.wins
         state = self.board.state.copy()
         player = self.board.currentPlayer
+        playerToMove = player
+
         visitedStates = set()
         
         expand = True
+        scoreLoss, scoreWin = False, False
         
         for t in range(1, self.maxMoves + 1):
-            #print('begin loop t{}'.format(t))
             available = self.board.allAvailableMoves(state, player)
-            #print('all moves', available)
 
             if len(available) > 0:
-                #movesStates = [(p, stateState(self.board.playMove(p, state, player))) for p in available]
-                #line = ' ' * t +'%d: current: %s | moves: %s' % (t, stateState(state), str(movesStates[0]))
-                #print(line)
-            
             
                 if all(plays.get((player, state[-1], state[1], move)) for move in available):
                     # if we have stats on all of the legal moves here, use them.
@@ -166,22 +141,15 @@ class Mcts(object):
                          self.C * math.sqrt(log_total / plays[(player, state[-1], state[1], move)]), move)
                         for move in available
                     )
-                    #line = ' ' * t +' val: %f, %s' % (value, str(move))
-                    #print(line)
                 else:
-                    #move, _ = random.choice(movesStates)
-                    
-                    ''' wanneer expansion reeds gebeurd is, hier met een evaluatie functie werken? 
-                    corrective strategy, greedy strategy...'''
-                    
-                    move = random.choice(available)
-                    
-                    #line = ' ' * t +' random: %s' % (str(move))
-                    #print(line)
+                    if (t + 1) % 3:
+                        move = random.choice(available)
+                    else:
+                        value, move = max((self.board.evaluate(self.board.makeMove(move, state, player), player, move), move)
+                                          for move in available
+                        )
                 
                 nextState = self.board.makeMove(move, state, player)
-                #self.board.unmakeMove(move, state, player)
-            #statesCopy.append(state)
             
             else:
                 move = None
@@ -195,53 +163,52 @@ class Mcts(object):
                 if t > self.maxDepth:
                     self.maxDepth = t
                     
-                ''' hier 1-ply lookahead doen, op zoek naar een winner, indien winner(s?),
-                backpropagation, en simulatie stoppen... nee, niet enkel bij expand maar bij selection?
-                voor iedere leaf node van de player to move...              
-                '''
+                #print('lookahead: current player: {}, next player: {}, player to move: {}'.format(player, -player, playerToMove))
+                lookahead = self.board.allAvailableMoves(nextState, -player)
+                if player != playerToMove:
+                    # als een van de lookahead moves een win is, dan als win scoren
+                    for l in lookahead:
+                        laState = self.board.makeMove(l, nextState, -player)
+                        if self.board.isGameOver(laState, -player) and self.board.winner == -player:
+                            #print('score a Win')
+                            scoreWin = True
+                            break
+                else:
+                    # als een van de lookahead moves een win is (voor de andere speler), dan als verlies scoren voor deze speler
+                    for l in lookahead:
+                        laState = self.board.makeMove(l, nextState, -player)
+                        if self.board.isGameOver(laState, -player) and self.board.winner == player:
+                            #print('score a Loss')
+                            scoreLoss = True
+                            break
             
             visitedStates.add((player, state[-1], state[1], move))
             
-            if self.board.isGameOver(nextState, player):
-                #line = ' ' * t + 'WINNER: %d\n' % (P[self.board.winner])
-                #print(line)                
+            if self.board.isGameOver(nextState, player) or scoreWin or scoreLoss:
                 break
             
             player = -player
             state = nextState
             
-            #print('end loop t{}'.format(t))
-            
-        #pprint.pprint(visitedStates)
         for player, state[-1], state[1], move in visitedStates:
             if (player, state[-1], state[1], move) not in plays:
                 continue
             plays[(player, state[-1], state[1], move)] += 1
-            if self.board.winner is not None:
-                if player == self.board.winner:
-                    wins[(player, state[-1], state[1], move)] += 1
-                else:
-                    wins[(player, state[-1], state[1], move)] -= 1
+
+            if player == self.board.winner or scoreWin:
+                wins[(player, state[-1], state[1], move)] += 1
+            elif -player == self.board.winner or scoreLoss:
+                wins[(player, state[-1], state[1], move)] -= 1
             
         self.totalSimulations += 1
-        end = datetime.datetime.utcnow()
+        #end = datetime.datetime.utcnow()
         
-        #print('runSimulation2: {}'.format(end - start))
-        '''pprint.pprint(plays)'''
 
 
 def test():    
     b = bitboard.BitBoard()
     print(b)
     mcts = Mcts(b)
-    
-    #mcts.runSimulation2()
-    #mcts.getPlay2()
-    '''print('-------------')
-    
-    mcts.plays, mcts.wins = {}, {}
-    mcts = Mcts(b)
-    mcts.runSimulation2()'''
     
     while not b.isGameOver(player=-b.currentPlayer):
         move = mcts.getPlay()

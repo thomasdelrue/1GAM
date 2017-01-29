@@ -35,24 +35,7 @@ P = { BLACKVAL: PLAYER,
 PCOLOUR = { BLACKVAL: BLACK, 
             WHITEVAL: WHITE }
 
-hourglass_strings_orig = (
-  "oooooooooooooooo",
-  " oo          oo ",
-  " oo          oo ",
-  " oo          oo ",
-  "  oo        oo  ",
-  "   oo      oo   ",
-  "     oo  oo     ",
-  "       oo       ",
-  "       oo       ",
-  "     oo  oo     ",
-  "   oo      oo   ",
-  "  oo        oo  ",
-  " oo          oo ",
-  " oo          oo ",
-  " oo          oo ",
-  "oooooooooooooooo",
-)
+MC = ['corners', '8x8', '6x6', '4x4', '2x2']
 
 hourglass_strings = (
   "............... ",

@@ -8,6 +8,10 @@ Lines of Action
 
 - saving winning moves?
 
+- bug waarbij x en o elkaar 'overschrijven'...
+---> een assert instoppen dat de twee states geen gemeenschappelijke bits mogen hebben...
+- een connectedness + uniformity instoppen
+- en dan nr games per play opkrikken...
 
 '''
 
@@ -33,7 +37,6 @@ def mainGame():
     
     player_cursor = pygame.mouse.get_cursor()
     
-    
     basicFont = pygame.font.SysFont("Arial", FONTSIZE)
     
     clock = pygame.time.Clock()
@@ -51,7 +54,6 @@ def mainGame():
     
     toss = [BLACKVAL, WHITEVAL]
     random.shuffle(toss)
-    print(toss)
     P[toss[0]] = PLAYER
     P[toss[1]] = COMPUTER
     printText("{} is black and {} is white. Black begins.".format(P[BLACKVAL], P[WHITEVAL]), 2)
@@ -64,8 +66,6 @@ def mainGame():
     while True:
         checkForQuit()
 
-        
-        ''' check whether Game Over, by checkGroup for both players?'''
         if not gameOver:
             # player's turn        
             if P[board.currentPlayer] == PLAYER:
@@ -76,21 +76,17 @@ def mainGame():
                  
                 for event in pygame.event.get():
                     if event.type == MOUSEMOTION:
-                        #mousex, mousey = event.pos
                         #print(getPosFromCoord(*event.pos))
                         if mouseClicked and fromPos is not None:
                             toPos = getPosFromCoord(*event.pos)
                             #print('-toPos:', toPos)
                             
                     elif event.type == MOUSEBUTTONDOWN:
-                        #mousex, mousey = event.pos
                         fromPos = None
                         pos = getPosFromCoord(*event.pos)
                         if pos and board.state[board.currentPlayer] & 2 ** pos:
                             fromPos = pos
-                            #availableMoves = board.availableMoves(fromPos)
                         else:
-                            #availableMoves = []
                             pass
                         mouseClicked = True
                     
@@ -115,13 +111,11 @@ def mainGame():
             else:
                 # computer
                 if len(availableMoves) > 0:
-                    #fromPos, toPos = random.choice(availableMoves)
-                    
                     fromPos, toPos = ai.getPlay()
-                    #print('picked fromPos, movePos={}, {}'.format(fromPos, toPos))
                     board.state[board.currentPlayer] ^= 2 ** fromPos
                     animateMove(fromPos, toPos)
                     board.stoneTaken = (board.state[-board.currentPlayer] & 2 ** toPos)
+
                     if board.stoneTaken:
                         board.state[-board.currentPlayer] ^= 2 ** toPos
                     board.state[board.currentPlayer] ^= 2 ** toPos
@@ -147,7 +141,6 @@ def mainGame():
             else:
                 winTxt = 'Draw.'
             printText('Game over. '+ winTxt, 3)
-            
             
 
         
@@ -217,7 +210,6 @@ def paintBoard(moving=None):
             pygame.gfxdraw.aacircle(screen, x, y, 3, RED)
             
             if len(availableMoves) > 0:
-                #print('selected/availableMoves={}'.format(availableMoves))
                 for move in availableMoves:
                     if fromPos == move[0]:
                         x2, y2 = getCoordFromPos(move[1])
@@ -245,11 +237,9 @@ def getPosFromCoord(x, y):
 
     # calculates row, column from coordinates    
     pos = (y - YMARGIN - BOARDMARGIN) // BOXSIZE, (x - XMARGIN - BOARDMARGIN) // BOXSIZE
-    #print('pos={}'.format(pos))
     
     # calculates pos number (63 - 0) from a row, column-pair
     newPos = 8 * (7 - pos[0]) + 7 - pos[1] 
-    #print('newPos={}'.format(newPos))
 
     return newPos  
 
