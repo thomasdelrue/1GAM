@@ -23,7 +23,7 @@ class Mcts(object):
         self.wins = {}
         self.maxMoves = 45
         self.maxDepth = 0
-        self.calculationTime = 5
+        self.calculationTime = 15
         self.C = 1.4
         
         self.totalSimulations = 0
@@ -111,6 +111,7 @@ class Mcts(object):
             
         print("Maximum depth searched: %d\n\n" % self.maxDepth)
         
+        assert type(move) is tuple and len(move) == 2, '{} is not a valid move'.format(move)
         return move
 
 

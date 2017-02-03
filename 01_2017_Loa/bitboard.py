@@ -290,6 +290,8 @@ class BitBoard(object):
         else:
             p = player
 
+        assert st[p] & st[-p] == 0, "overlapping states... {}, -1: {}, 1: {}".format(st[p] & st[-p], st[-1], st[1])
+
         if self.checkGroup(st, p):
             self.winner = p
             return True
@@ -304,6 +306,7 @@ class BitBoard(object):
 
         
     def makeMove(self, move, state=None, player=None):
+        
         if state is None:
             st = self.state
         else:
@@ -313,13 +316,26 @@ class BitBoard(object):
             p = self.currentPlayer
         else:
             p = player
+        
+        
             
         me = st[p]
         you = st[-p]
+        
+        assert me & you == 0, "makeMove: {} conflict".format(me & you)
             
         me ^= 2 ** move[0]  
-        self.stoneTaken = bool(you & move[1])             
+        self.stoneTaken = bool(you & 2 ** move[1])   
+        if self.stoneTaken:
+            you ^= 2 ** move[1]          
         me ^= 2 ** move[1]
+        
+        #try:
+        assert me & you == 0, "makeMove2: {} conflict".format(me & you)
+        '''finally:
+            print('move: {} p: {} original state: -1:{} / 1:{}'.format(move, p, st[-1], st[1]))
+            print('me ', self.bitString(me))
+            print('you', self.bitString(you))'''
         
         return { p: me , -p: you}
     
@@ -335,11 +351,15 @@ class BitBoard(object):
         else:
             p = player
 
+        assert st[p] & st[-p] == 0, "unmakeMove: {} conflict".format(st[p] & st[-p])
+
         st[p] ^= 2 ** move[1]
         if self.stoneTaken:
             st[-p] ^= 2 ** move[1]
             self.stoneTaken = False             
         st[p] ^= 2 ** move[0]  
+        
+        assert st[p] & st[-p] == 0, "unmakeMove2: {} conflict".format(st[p] & st[-p])
         
         return st    
     
@@ -371,12 +391,14 @@ class BitBoard(object):
         if p == self.currentPlayer:
             val += .2
         
-        return val    
+        return val   
+        #return 0 
 
     def f1_concentration(self, state):
         n = gmpy2.popcount(state)
         if n == 1:
-            return 1.0
+            x = gmpy2.bit_scan1(state)
+            return 1.0, (7 - x // 8, 7 - x % 8)
         
         # centre of mass
         rr, cc = 0, 0
@@ -444,6 +466,17 @@ if __name__ == '__main__':
     print('-----')    
     '''bb.f1_concentration(bb.state[1])
     bb.f2_concentration(bb.state[1])'''
-    bb.evaluate()
+    
+    ''' {1: 1152435641982976, -1: 9223442698233978892}'''
+    
+    '''print(bb.bitString(9007199254740992)) 
+    bb.state[-1] = 6782429834912989310
+    bb.state[1] = 9431067454963968
+    print(bb.bitString(bb.state[-1]))
+    print(bb.bitString(bb.state[1]))
+    
+    bb.evaluate()'''
+    
+    print(bb.f1_concentration(9007199254740992))
     
    
