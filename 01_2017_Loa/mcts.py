@@ -14,6 +14,8 @@ import pickle
 notes:
 - keep in mind that it might be possible to pass: be sure to make that move also: i.e. save the nextState also,
   which will be identical to the current state
+  
+- 1100g in 6s random+cython tgo. ?g per 6s met eval+cython?
 '''
 
 class Mcts(object):
@@ -23,10 +25,12 @@ class Mcts(object):
         self.wins = {}
         self.maxMoves = 45
         self.maxDepth = 0
-        self.calculationTime = 15
+        self.calculationTime = 7.5
         self.C = 1.4
         
         self.totalSimulations = 0
+        
+        self._debug = False 
         
         self.loadKnowledgeTree()
         
@@ -42,7 +46,7 @@ class Mcts(object):
         try:
             with open('wins.data', 'rb') as w:
                 self.wins = pickle.load(w)
-                print('\nloaded wins. {} entries'.format(len(self.wins)))
+                print('loaded wins. {} entries'.format(len(self.wins)))
         except FileNotFoundError:
             print('no wins.data\n')            
         
@@ -74,8 +78,9 @@ class Mcts(object):
         player = self.board.currentPlayer
         available = self.board.allAvailableMoves()
         random.shuffle(available)
-        line = 'turn: %d player: %d state:\n %s' % (self.board.turnCount, player, str(state))
-        print(line)
+        if self._debug:
+            line = 'turn: %d player: %d state:\n %s' % (self.board.turnCount, player, str(state))
+            print(line)
                 
         if not available:
             return
@@ -88,8 +93,9 @@ class Mcts(object):
             self.runSimulation()
             games += 1
             
-        line = '\ngames: %d time elapsed: %s' % (games, str(datetime.datetime.utcnow() - begin))
-        print(line)
+        if self._debug:
+            line = '\ngames: %d time elapsed: %s' % (games, str(datetime.datetime.utcnow() - begin))
+            print(line)
         
         # pick the move with the highest percentage of wins
         percentWins, move = max(
@@ -98,25 +104,26 @@ class Mcts(object):
             for move in available
         )
         
-        line = "best move: %s %%chance of winning: %f" % (str(move), percentWins)
-        print(line)
+        if self._debug:
+            line = "best move: %s %%chance of winning: %f" % (str(move), percentWins)
+            print(line)
         
-        # display stats for each possible play
-        for x in sorted(((100 * self.wins.get((player, state[-1], state[1], move), 0) /
-                         self.plays.get((player, state[-1], state[1], move), 1),
-                         self.wins.get((player, state[-1], state[1], move), 0),
-                         self.plays.get((player, state[-1], state[1], move), 0), move)
-                        for move in available), reverse=True):
-            print("{3}: {0:.2f}% ({1} / {2})".format(*x))
-            
-        print("Maximum depth searched: %d\n\n" % self.maxDepth)
+            # display stats for each possible play
+            for x in sorted(((100 * self.wins.get((player, state[-1], state[1], move), 0) /
+                             self.plays.get((player, state[-1], state[1], move), 1),
+                             self.wins.get((player, state[-1], state[1], move), 0),
+                             self.plays.get((player, state[-1], state[1], move), 0), move)
+                            for move in available), reverse=True):
+                print("{3}: {0:.2f}% ({1} / {2})".format(*x))
+                
+            print("Maximum depth searched: %d\n\n" % self.maxDepth)
         
         assert type(move) is tuple and len(move) == 2, '{} is not a valid move'.format(move)
         return move
 
 
 
-    def runSimulation(self):
+    def runSimulation(self, eval=True):
         #start = datetime.datetime.utcnow()
         
         plays, wins = self.plays, self.wins
@@ -143,7 +150,7 @@ class Mcts(object):
                         for move in available
                     )
                 else:
-                    if (t + 1) % 3:
+                    if (t + 1) % 3 or not eval:
                         move = random.choice(available)
                     else:
                         value, move = max((self.board.evaluate(self.board.makeMove(move, state, player), player, move), move)
@@ -164,22 +171,17 @@ class Mcts(object):
                 if t > self.maxDepth:
                     self.maxDepth = t
                     
-                #print('lookahead: current player: {}, next player: {}, player to move: {}'.format(player, -player, playerToMove))
                 lookahead = self.board.allAvailableMoves(nextState, -player)
                 if player != playerToMove:
-                    # als een van de lookahead moves een win is, dan als win scoren
                     for l in lookahead:
                         laState = self.board.makeMove(l, nextState, -player)
                         if self.board.isGameOver(laState, -player) and self.board.winner == -player:
-                            #print('score a Win')
                             scoreWin = True
                             break
                 else:
-                    # als een van de lookahead moves een win is (voor de andere speler), dan als verlies scoren voor deze speler
                     for l in lookahead:
                         laState = self.board.makeMove(l, nextState, -player)
                         if self.board.isGameOver(laState, -player) and self.board.winner == player:
-                            #print('score a Loss')
                             scoreLoss = True
                             break
             
@@ -202,14 +204,18 @@ class Mcts(object):
                 wins[(player, state[-1], state[1], move)] -= 1
             
         self.totalSimulations += 1
-        #end = datetime.datetime.utcnow()
         
 
 
-def test():    
+def test(*args):
     b = bitboard.BitBoard()
     print(b)
     mcts = Mcts(b)
+    mcts._debug = True
+    if len(args) > 0 and type(args[0]) is int:
+        print('set calculation time at {} seconds'.format(args[0]))
+        mcts.calculationTime = args[0]
+
     
     while not b.isGameOver(player=-b.currentPlayer):
         move = mcts.getPlay()

@@ -2,16 +2,8 @@
 Lines of Action
 ---------------
 
-- not yet implemented: pass moves? probably bugs the ai too  
-- bug: deciding winner...
-- to do: gui, sound, smarten up ai
-
-- saving winning moves?
-
-- bug waarbij x en o elkaar 'overschrijven'...
----> een assert instoppen dat de twee states geen gemeenschappelijke bits mogen hebben...
-- een connectedness + uniformity instoppen
-- en dan nr games per play opkrikken...
+- Mcts mixed with evaluation function
+- still not very smart AI, easy to beat... still too few games a sec
 
 '''
 
@@ -67,7 +59,11 @@ def mainGame():
         checkForQuit()
 
         if not gameOver:
-            # player's turn        
+            # player's turn
+            
+            for _ in range(3):
+                ai.runSimulation(eval=False)
+                    
             if P[board.currentPlayer] == PLAYER:
                 if len(availableMoves) == 0:
                     printText('{} needs to pass'.format(PLAYER), 1)                
@@ -76,10 +72,8 @@ def mainGame():
                  
                 for event in pygame.event.get():
                     if event.type == MOUSEMOTION:
-                        #print(getPosFromCoord(*event.pos))
                         if mouseClicked and fromPos is not None:
                             toPos = getPosFromCoord(*event.pos)
-                            #print('-toPos:', toPos)
                             
                     elif event.type == MOUSEBUTTONDOWN:
                         fromPos = None
@@ -127,7 +121,6 @@ def mainGame():
                 availableMoves = board.allAvailableMoves()
                 pygame.mouse.set_cursor(*player_cursor)
             
-            ai.runSimulation()
             timePassed = clock.tick(FPS) / 1000.0
     
             paintBoard()        
@@ -149,6 +142,7 @@ def checkForQuit():
         if event.type == QUIT or (event.type == KEYDOWN and 
                                   event.key == K_ESCAPE):
             ai.saveKnowledgeTree()
+            pygame.quit()
             exit()
         pygame.event.post(event)
 

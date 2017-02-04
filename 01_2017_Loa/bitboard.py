@@ -21,13 +21,11 @@ class BitBoard(object):
         b = 0
         for idx in [62, 61, 60, 59, 58, 57, 6, 5, 4, 3, 2, 1]:
             b |= 2 ** idx
-        print(b)
         boards[BLACKVAL] = b
+
         w = 0
         for idx in [55, 48, 47, 40, 39, 32, 31, 24, 23, 16, 15, 8]:
-        #for idx in [37, 36]:            
             w |= 2 ** idx
-        print(w)
         boards[WHITEVAL] = w
         
         self.rows = { x: self.makeMask('row', x) for x in range(8) }
@@ -39,6 +37,10 @@ class BitBoard(object):
                               for x in range(2, 13) }
         
         self.board_cat = { x: self.makeMask(MC[x]) for x in range(5)}
+        
+        self.neighbourhood = { x: self.makeMask('neighbourhood', x) for x in range(64)}
+        
+        self.quads = { (r, c): self.makeMask('quads', (r, c)) for r in range(8) for c in range(8)}
         
         return boards
     
@@ -72,8 +74,6 @@ class BitBoard(object):
 
     
     def allAvailableMoves(self, state=None, player=None):
-        #start = datetime.datetime.utcnow()
-        
         if state is None:
             st = self.state
         else:
@@ -91,9 +91,6 @@ class BitBoard(object):
             aav += self.availableMoves(n, st, p)
             n = gmpy2.bit_scan1(st[p], n + 1)
 
-        #end = datetime.datetime.utcnow()
-        #print('aav time: {}'.format(end - start))
-            
         return aav
     
     
@@ -219,13 +216,32 @@ class BitBoard(object):
         elif mtype == '2x2':
             for i in [36, 35, 28, 27]:
                 mask |= 2 ** i
+        elif mtype == 'neighbourhood':
+            for i in [-9, -8, -7, -1, 1, 7, 8, 9]:
+                if idx <= 7 and i in [-7, -8, -9]:
+                    continue
+                if idx >= 56 and i in [7, 8, 9]:
+                    continue
+                if idx % 8 == 0 and i in [-9, -1, 7]:
+                    continue
+                if (idx + 1) % 8 == 0 and i in [9, 1, -7]:
+                    continue                    
+                mask |= 2 ** (idx + i) 
+        elif mtype == 'quads':
+            mask = []
+            rr = [r for r in range(idx[0] - 2, idx[0] + 2) if r >= 0 and r <= 6]
+            cc = [c for c in range(idx[1] - 2, idx[1] + 2) if c >= 0 and c <= 6]
+            for c in cc:
+                for r in rr:
+                    x = (7 - r) * 8 + (7 - c)
+                    m = 0
+                    for i in [x, x - 1, x - 8, x - 9]:
+                        m |= 2 ** i
+                    mask.append(m)
                    
         return mask
     
     def checkGroup(self, state=None, player=None):
-        #print('begin checkGroup')
-        #start = datetime.datetime.utcnow()
-        
         if state is None:
             st = self.state
         else:
@@ -249,30 +265,14 @@ class BitBoard(object):
                 current = gmpy2.bit_scan1(checklist)
                 checklist ^= 2 ** current
                 
-                for i in [-9, -8, -7, -1, 1, 7, 8, 9]:
-                    if current <= 7 and i in [-7, -8, -9]:
-                        continue
-                    if current >= 56 and i in [7, 8, 9]:
-                        continue
-                    if current % 8 == 0 and i in [-9, -1, 7]:
-                        continue
-                    if (current + 1) % 8 == 0 and i in [9, 1, -7]:
-                        continue                    
-                    
-                    new = current + i
-                    #print(new, current, i)
-
-                    currentNeighbour = (2 ** new) & self.mask64
-                    if currentNeighbour & unvisited:
-                        unvisited ^= currentNeighbour
-                        checklist |= currentNeighbour
-                        
+                currentNeighbours = self.neighbourhood[current] & unvisited
+                if currentNeighbours:
+                    unvisited ^= currentNeighbours
+                    checklist |= currentNeighbours
+                
             if gmpy2.popcount(unvisited) > 0:
                 areGrouped = False
         
-        #end = datetime.datetime.utcnow()
-        #print('checkGroup time: {} areGrouped={}'.format(end - start, areGrouped))
-                
         return areGrouped
     
     def changePlayer(self):
@@ -317,25 +317,14 @@ class BitBoard(object):
         else:
             p = player
         
-        
-            
         me = st[p]
         you = st[-p]
         
-        assert me & you == 0, "makeMove: {} conflict".format(me & you)
-            
         me ^= 2 ** move[0]  
         self.stoneTaken = bool(you & 2 ** move[1])   
         if self.stoneTaken:
             you ^= 2 ** move[1]          
         me ^= 2 ** move[1]
-        
-        #try:
-        assert me & you == 0, "makeMove2: {} conflict".format(me & you)
-        '''finally:
-            print('move: {} p: {} original state: -1:{} / 1:{}'.format(move, p, st[-1], st[1]))
-            print('me ', self.bitString(me))
-            print('you', self.bitString(you))'''
         
         return { p: me , -p: you}
     
@@ -351,21 +340,16 @@ class BitBoard(object):
         else:
             p = player
 
-        assert st[p] & st[-p] == 0, "unmakeMove: {} conflict".format(st[p] & st[-p])
-
         st[p] ^= 2 ** move[1]
         if self.stoneTaken:
             st[-p] ^= 2 ** move[1]
             self.stoneTaken = False             
         st[p] ^= 2 ** move[0]  
         
-        assert st[p] & st[-p] == 0, "unmakeMove2: {} conflict".format(st[p] & st[-p])
-        
         return st    
     
+
     ''' heuristic evaluation function of the board'''
-   
-    ''' for the moment, this eval + cythonised gives 125 +- games per 5 secs'''
     def evaluate(self, state=None, player=None, move=None):
         if state is None:
             st = self.state
@@ -377,89 +361,178 @@ class BitBoard(object):
         else:
             p = player
         
-        f1p, comp = self.f1_concentration(st[p]) 
-        f1o, como = self.f1_concentration(st[-p])
-        
-        val = f1p - f1o
-        val += self.f2_centralisation(st[p]) - self.f2_centralisation(st[-p])
-        val += self.f3_centre_of_mass_pos(st[p], comp) - self.f3_centre_of_mass_pos(st[-p], como)
-        
-        if move:
-            val += self.f5_mobility(st[p], move)
-        
-        # f9. player to move bonus
-        if p == self.currentPlayer:
-            val += .2
-        
-        return val   
-        #return 0 
-
-    def f1_concentration(self, state):
-        n = gmpy2.popcount(state)
+        # the player        
+        n = gmpy2.popcount(st[p])
         if n == 1:
-            x = gmpy2.bit_scan1(state)
-            return 1.0, (7 - x // 8, 7 - x % 8)
+            return 50
+        
+        nn = gmpy2.popcount(st[-p])
+        if nn == 1:
+            return -50
+        
+        x = gmpy2.bit_scan1(st[p])
         
         # centre of mass
         rr, cc = 0, 0
-        x = gmpy2.bit_scan1(state)
-        p = []
+        pieces = []
+
+        f2p = 0
+        f7p = 0
+
+        left = right = 7 - x % 8
+        top = bottom = 7 - x // 8        
         while x is not None:
             r, c = 7 - x // 8, 7 - x % 8
-            p.append((r, c))
+            if r < top:
+                top = r
+            elif r > bottom:
+                bottom = r
+            if c < left:
+                left = c
+            elif c > right:
+                right = c
+            
+            pieces.append((r, c))
             rr += r
             cc += c
-            #print(x, r, c, rr, cc)
-            x = gmpy2.bit_scan1(state, x + 1)
+            
+            for i in range(5):
+                if 2 ** x & self.board_cat[i]:
+                    f2p += i - 2
+                    break
+            
+            f7p += gmpy2.popcount(self.neighbourhood[x] & st[p])
+            
+            x = gmpy2.bit_scan1(st[p], x + 1)
         rr /= n
         rr = round(rr)
         cc /= n
         cc = round(cc)
-        #print('centre of mass={}'.format((rr, cc)))
+        comp = (rr, cc)
         
         # sum of distances
         dist = 0
-        for r, c in p:
+        for r, c in pieces:
             dist += max(abs(r - rr), abs(c - cc))
-        #print('sum of distances={}'.format(dist))
         
         # surplus of distances
         surplus = dist - self.min_sum_dist[n]
-        #print('surplus={} -> return value={}'.format(surplus, 1 / surplus))
         
-        return 1 / (surplus + 1), (rr, cc)
-
-    
-    def f2_centralisation(self, state): 
-        n = gmpy2.popcount(state)
-        x = gmpy2.bit_scan1(state)
-        score = 0
-        while x is not None:
-            for i in range(5):
-                if 2 ** x & self.board_cat[i]:
-                    score += i - 2
-                    break
-            x = gmpy2.bit_scan1(state, x + 1)
-        score /= n * 2
-        #print('centralisation score: {}'.format(score))
-        return score
-    
-    def f3_centre_of_mass_pos(self, state, com):
-        pos = (7 - com[0]) * 8 + 7 - com[1]
+        f1p = 1 / (surplus + 1)
+        
+        f2p /= n * 2
+        
+        pos = (7 - rr) * 8 + 7 - cc
         for i in range(4, -1, -1):
             if 2 ** pos & self.board_cat[i]:
-                return 1 / (1 + i) 
-            
-    def f5_mobility(self, state, move):
-        val = 1
-        if self.stoneTaken:
-            val *= 2
-        if 2 ** move[1] & (self.board_cat[0] | self.board_cat[1]):
-            val /= 2
-            if 2 ** move[0] & (self.board_cat[0] | self.board_cat[1]):
-                val /= 2          
+                f3p = 1 / (1 + i)
+                break 
+
+        f4p = 0
+        for q in self.quads[comp]:
+            if gmpy2.popcount(q & st[p]) == 3:
+                f4p += 1
+            elif gmpy2.popcount(q & st[p]) == 4:
+                f4p += 2
+        f4p /= len(self.quads[comp])
+
+        f5p = 0        
+        if move:
+            f5p = .5
+            if self.stoneTaken:
+                f5p *= 2
+            if 2 ** move[1] & (self.board_cat[0] | self.board_cat[1]):
+                f5p /= 2
+                if 2 ** move[0] & (self.board_cat[0] | self.board_cat[1]):
+                    f5p /= 2          
+
+        f7p /= n
         
-        return val / 2
+        f8p = 1 / ((right - left + 1) * (bottom - top + 1))
+
+        
+        # the other
+
+        x = gmpy2.bit_scan1(st[-p])
+        
+        # centre of mass
+        rr, cc = 0, 0
+        pieces = []
+        
+        f2o = 0
+        f7o = 0
+
+        left = right = 7 - x % 8
+        top = bottom = 7 - x // 8        
+        while x is not None:
+            r, c = 7 - x // 8, 7 - x % 8
+            if r < top:
+                top = r
+            elif r > bottom:
+                bottom = r
+            if c < left:
+                left = c
+            elif c > right:
+                right = c
+            
+            pieces.append((r, c))
+            rr += r
+            cc += c
+            
+            for i in range(5):
+                if 2 ** x & self.board_cat[i]:
+                    f2o += i - 2
+                    break
+
+            f7o += gmpy2.popcount(self.neighbourhood[x] & st[-p])
+            
+            x = gmpy2.bit_scan1(st[-p], x + 1)
+        rr /= nn
+        rr = round(rr)
+        cc /= nn
+        cc = round(cc)
+        como = (rr, cc)
+        
+        # sum of distances
+        dist = 0
+        for r, c in pieces:
+            dist += max(abs(r - rr), abs(c - cc))
+        
+        # surplus of distances
+        surplus = dist - self.min_sum_dist[nn]
+        
+        f1o = 1 / (surplus + 1)
+
+        f2o /= nn * 2
+        
+        pos = (7 - rr) * 8 + 7 - cc
+        for i in range(4, -1, -1):
+            if 2 ** pos & self.board_cat[i]:
+                f3o = 1 / (1 + i)
+                break 
+
+        f4o = 0
+        for q in self.quads[como]:
+            if gmpy2.popcount(q & st[-p]) == 3:
+                f4o += 1
+            elif gmpy2.popcount(q & st[-p]) == 4:
+                f4o += 2
+        f4o /= len(self.quads[como])
+
+
+        f7o /= nn
+        f8o = 1 / ((right - left + 1) * (bottom - top + 1))
+
+        val = f1p - f1o + f2p - f2o + f3p - f3o + f4p - f4o + f5p + f7p - f7o + f8p - f8o
+        
+        # f9. player to move bonus
+        if p == self.currentPlayer:
+            val += .2
+
+        return val   
+
+
+
 
 if __name__ == '__main__':
     bb = BitBoard()
@@ -469,14 +542,20 @@ if __name__ == '__main__':
     
     ''' {1: 1152435641982976, -1: 9223442698233978892}'''
     
-    '''print(bb.bitString(9007199254740992)) 
-    bb.state[-1] = 6782429834912989310
-    bb.state[1] = 9431067454963968
+    '''print(bb.bitString(9007199254740992))''' 
+    bb.state[-1] = 2 ** 55 | 2 ** 18 | 2 ** 17 | 2 ** 16
+    bb.state[1] = 2 | 1 | 2 ** 10
     print(bb.bitString(bb.state[-1]))
     print(bb.bitString(bb.state[1]))
     
-    bb.evaluate()'''
+    '''bb.evaluate()'''
     
-    print(bb.f1_concentration(9007199254740992))
+    #print(bb.f1_concentration(9007199254740992))
+    print(bb.evaluate())
+    print(bb.evaluate2())
+    '''print('-------')
+    for i in range(64):
+        print(i, ':', bb.bitString(bb.neighbourhood[i]))'''
     
-   
+    '''for m in bb.quads[(4, 5)]:
+        print(bb.bitString(m))'''
