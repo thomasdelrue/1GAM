@@ -1,0 +1,28 @@
+Design Document
+===============
+
+
+working title: pitch perfect?
+
+- audio/rhythm game where the gameplay/input is the sound
+
+- goal is to enter the right sound in time. Missing (continuously) means losing;
+getting it right advances you further, gets you to the next level
+
+- at the end of each level, you can have a playback of your 'game'/music
+
+- first level, 2 'sounds' (and an 'empty'? aka silence). Next level, 3 sounds; ...4 sounds... etc.
+
+- input is microphone. Possibility to use rocksmith guitar? (chords?)
+- if no midi input, then keyboards/mouse for picking the right 'sounds'
+
+- gameplay can be the right pitch... the right volume, rhythm/speed?
+
+
+- begin screen, with a short music (hang) playing
+- end screen?
+- game screen
+- settings screen
+
+
+- look into DSP, pygame midi

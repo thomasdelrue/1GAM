@@ -7,3 +7,5 @@
 	yet, a playable prototype of the first level.
 - 01/2017: Lines of Action boardgame
 	Challenge: to make a good and fast, persistent?, AI
+- 02/2017: Pitch Perfect.
+	A Sound recognition game. 
