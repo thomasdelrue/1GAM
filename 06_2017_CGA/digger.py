@@ -17,11 +17,16 @@ import random
 import pygame
 
 
+
+
+
 def game():
-    global screen, clock, pic, rect
+    global screen, clock, pic, rect, screenFlags
+    
+    screenFlags = SRCALPHA
     
     pygame.init()
-    screen = pygame.display.set_mode(SCREEN_SIZE, FULLSCREEN | SRCALPHA, 32)
+    screen = pygame.display.set_mode(SCREEN_SIZE, screenFlags, 32)
     pygame.display.set_caption('Digger clone')
     
     clock = pygame.time.Clock()
@@ -36,12 +41,23 @@ def game():
     
     while True:
         checkForQuit()
+        
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_TAB:
+                    toggleScreen()
             
         drawScreen()
         
         clock.tick(FPS)
         pygame.display.update()
-    
+
+
+def toggleScreen():
+    global screenFlags
+    screenFlags ^= FULLSCREEN
+    screen = pygame.display.set_mode(SCREEN_SIZE, screenFlags, 32)
+        
 
 
 def drawScreen():
@@ -71,6 +87,8 @@ def checkForQuit():
             exit()
             
         pygame.event.post(event)
+
+
 
 if __name__ == '__main__':
     game()

@@ -136,13 +136,16 @@ class Application:
                 elif event.type == KEYDOWN:
                     self.statusBar.updateText("key pressed: {}".format(event.key));
                     if event.key == K_s:
-                        print("saving...")
                         self.saveImage()
+                        self.statusBar.updateText("Image saved");
                     elif event.key == K_o:
-                        print("opening...")
                         self.loadImage()                                                
+                        self.statusBar.updateText("Image loaded");                        
                     elif event.key == K_c:
                         self.canvas.clear()
+                        self.statusBar.updateText("Cleared canvas");                        
+                    elif event.key in (K_LEFT, K_RIGHT, K_UP, K_DOWN):
+                        self.canvas.moveCells(event.key)
                 else:
                     pygame.event.post(event)
                     
@@ -257,6 +260,24 @@ class Canvas(Widget):
                 pygame.draw.rect(self, self.border, (MARGIN + i * PIXEL_SIZE, MARGIN + j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE), 1)
                 if self.cells[i][j]:
                     pygame.draw.rect(self, self.cells[i][j], (MARGIN + i * PIXEL_SIZE, MARGIN + j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE), 0)
+
+    def moveCells(self, direction):
+        if direction in (K_LEFT, K_UP):
+            start, stop, step = 0, self.size - 1, 1
+        else:
+            start, stop, step = self.size - 1, 0, -1
+        
+        if direction in (K_LEFT, K_RIGHT):
+            for y in range(self.size):
+                for x in range(start, stop, step):
+                    self.cells[x][y] = self.cells[x + step][y]
+                self.cells[stop][y] = None
+        else:
+            for x in range(self.size):
+                for y in range(start, stop, step):
+                    self.cells[x][y] = self.cells[x][y + step]
+                self.cells[x][stop] = None
+        
                 
     def setPalette(self, palette):
         self.palette = palette
