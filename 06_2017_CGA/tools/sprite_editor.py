@@ -52,6 +52,9 @@ C_H = C_SIZE * PIXEL_SIZE + MARGIN * 2
 PR_W = C_SIZE + MARGIN * 2
 PR_H = C_SIZE + MARGIN * 2
 
+SS_W = WIDTH - MARGIN * 3 - C_W
+SS_H = C_H
+
 FPS = 30
 
 MB_LEFT = 1
@@ -89,6 +92,12 @@ class Application:
         self.preview = Preview(C_SIZE, PR_W, PR_H)
         self.addWidget(self.preview, (MARGIN, MARGIN * 2 + C_H))
         self.preview.setCanvas(self.canvas)
+        
+        self.spriteSheet = SpriteSheet(SS_W, SS_H)
+        self.addWidget(self.spriteSheet, (MARGIN * 2 + C_W, MARGIN))
+        
+        self.activatableWidgets = [self.spriteSheet, self.canvas]
+        self.activeWidget = self.canvas
         
         
     def addWidget(self, widget, pos):
@@ -146,6 +155,8 @@ class Application:
                         self.statusBar.updateText("Cleared canvas");                        
                     elif event.key in (K_LEFT, K_RIGHT, K_UP, K_DOWN):
                         self.canvas.moveCells(event.key)
+                    elif event.key == K_TAB:
+                        self.switchActiveWidget()
                 else:
                     pygame.event.post(event)
                     
@@ -156,6 +167,11 @@ class Application:
                 for w, r in self.widgets:
                     #print("mousePos", mousePos)
                     if r.collidepoint(mousePos):
+                        if w in self.activatableWidgets:
+                            if w != self.activeWidget:
+                                self.switchActiveWidget(w)
+                                break
+                            
                         #print("clicked in {}".format(w.__class__.__name__))
                         w.clicked((mousePos[0] - r.x, mousePos[1] - r.y), mouseButton)
                         break
@@ -181,15 +197,32 @@ class Application:
                     self.canvas.cells[x][y] = rgba_val
         print("loaded")
                     
-    
-    
         
     def saveImage(self):
         pygame.image.save(self.preview.subsurface((MARGIN, MARGIN, C_SIZE, C_SIZE)), 
                           "sprite.png")
         print("saved")
 
+    
+    def switchActiveWidget(self, newActive=None):
+        for w in self.activatableWidgets:
+            w.setActive(False)
+        
+        if newActive is None:
+            n = self.activatableWidgets[0]
+        else:
+            n = newActive
+            
+        w = self.activatableWidgets.pop(0)
+        while w != n:
+            self.activatableWidgets.append(w)
+            w = self.activatableWidgets.pop(0)
+        w.setActive(True)
+        self.activeWidget = w
+        self.activatableWidgets.append(w)
+        
 
+            
 
 class Widget(pygame.Surface):
     def __init__(self, w, h):
@@ -200,6 +233,9 @@ class Widget(pygame.Surface):
         pass
     
     def draw(self):
+        pass
+
+    def setActive(self, isActive):
         pass
 
 
@@ -234,9 +270,11 @@ class Canvas(Widget):
     def __init__(self, size, w, h):
         self.size = size
         Widget.__init__(self, w, h)
-        self.border = GREY
+        self.border = RED
+        self.active = True
         self.cells = [[None for j in range(self.size)] for i in range(self.size)]        
         self.palette = None
+        self.gridColour = GREY
         
     def clear(self):
         self.cells = [[None for j in range(self.size)] for i in range(self.size)]        
@@ -249,7 +287,6 @@ class Canvas(Widget):
             self.cells[x][y] = self.palette.selectedColour
         elif button == MB_RIGHT:
             self.cells[x][y] = None
-        
     
     def draw(self):
         self.fill(BLACK)
@@ -257,7 +294,7 @@ class Canvas(Widget):
         
         for i in range(self.size):
             for j in range(self.size):
-                pygame.draw.rect(self, self.border, (MARGIN + i * PIXEL_SIZE, MARGIN + j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE), 1)
+                pygame.draw.rect(self, self.gridColour, (MARGIN + i * PIXEL_SIZE, MARGIN + j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE), 1)
                 if self.cells[i][j]:
                     pygame.draw.rect(self, self.cells[i][j], (MARGIN + i * PIXEL_SIZE, MARGIN + j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE), 0)
 
@@ -278,6 +315,12 @@ class Canvas(Widget):
                     self.cells[x][y] = self.cells[x][y + step]
                 self.cells[x][stop] = None
         
+    def setActive(self, isActive):
+        self.active = isActive
+        if isActive:
+            self.border = RED
+        else:
+            self.border = GREY
                 
     def setPalette(self, palette):
         self.palette = palette
@@ -291,12 +334,10 @@ class Preview(Widget):
         self.border = GREY
         self.canvas = None
         self.alpha_surface = pygame.Surface((self.get_width(), self.get_height()), SRCALPHA)
-
-        
         
     def draw(self):
-        self.fill((0, 0, 0, 0))
-        self.alpha_surface.fill((0, 0, 0, 0))
+        self.fill((*BLACK, 0))
+        self.alpha_surface.fill((*BLACK, 0))
         pygame.draw.rect(self.alpha_surface, (*self.border, 255), (0, 0, self.get_width(), self.get_height()), 1)
         
         for i in range(self.size):
@@ -309,7 +350,26 @@ class Preview(Widget):
     def setCanvas(self, canvas):
         self.canvas = canvas
         
-    
+
+class SpriteSheet(Widget):
+    def __init__(self, w, h):
+        Widget.__init__(self, w, h)
+        self.border = GREY
+        self.group = pygame.sprite.Group()
+        self.active = False
+        
+    def draw(self):
+        self.fill(BLACK)
+        pygame.draw.rect(self, self.border, (0, 0, self.get_width(), self.get_height()), 1)
+        
+    def setActive(self, isActive):
+        self.active = isActive
+        if isActive:
+            self.border = RED
+        else:
+            self.border = GREY
+            
+            
 class StatusBar(Widget):
     def __init__(self, w, h):
         Widget.__init__(self, w, h)
