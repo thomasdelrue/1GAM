@@ -21,7 +21,7 @@ import pygame
 
 
 def game():
-    global screen, clock, pic, rect, screenFlags
+    global screen, clock, pic, rect, screenFlags, tileSurf, tileRect
     
     screenFlags = SRCALPHA
     
@@ -32,10 +32,12 @@ def game():
     clock = pygame.time.Clock()
     
     
-    pic = pygame.image.load("tools\\sprite.png").convert_alpha()
+    pic = pygame.image.load("tools\\digger1.png").convert_alpha()
     rect = pic.get_rect()
     rect.center = (WIDTH // 2, HEIGHT // 2)
     
+    tileSurf = pygame.image.load("tools\\tile1.png").convert_alpha()
+    tileRect = tileSurf.get_rect()
     
     drawScreen()
     
@@ -62,7 +64,7 @@ def toggleScreen():
 
 def drawScreen():
     
-    def colour():
+    '''def colour():
         colourList = []
         while True:
             if len(colourList) > 0:
@@ -74,8 +76,13 @@ def drawScreen():
     
     for i in range(WIDTH // 10):
         for j in range(HEIGHT // 10):
-            pygame.draw.rect(screen, next(colour()), (i * 10, j * 10, 10, 10), 0)
-            
+            pygame.draw.rect(screen, next(colour()), (i * 10, j * 10, 10, 10), 0)'''
+    
+    for x in range(15):
+        for y in range(10):
+            tileRect.topleft = x * 16, y * 16
+            screen.blit(tileSurf, tileRect)
+    
     screen.blit(pic, rect)
 
 

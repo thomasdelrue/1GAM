@@ -1,0 +1,16 @@
+- project 'Muse' - feb 2018
+
+'rhythm'/platformer game
+
+- music sheet is the platform
+- goal is for the player 'cursor' to hit the notes on the music sheet
+at the right time...
+
+- music sheet 'scrolls' in time in sync with the music playing...
+
+- like Rocksmith, different 'notes' have their own color coding...
+
+- first try simple sheet music, like 'Frère Jacques...'
+- first get *timing* of 'scrolling' right!!. When it's time for a
+    note to 'hit', it should consistenly be displayed at the 'now'
+    point on the screen (where the player cursor will be)
