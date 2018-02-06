@@ -1,4 +1,5 @@
 from pygame.locals import *
+from collections import deque
 from constants import *
 from sheet import Sheet, Note, frere_jacques
 from support import BeginScene, EndScene
@@ -7,8 +8,7 @@ import pygame.midi
      
 """
 next steps:
-    - get music played in real/runtime, during runloop
-    - animate the sheet scrolling
+    - animate the sheet scrolling (more or less... not exactly right)
     - draw the notes
     - draw the cursor
     - write user input -> move the cursor
@@ -45,7 +45,8 @@ class Game():
     def __init__(self):
         self.gameOver = False
         self.sheet = self.loadSheetMusic()
-        self.timePassed = 0
+        self.totalTimePassed = 0
+        self.scroll = ScrollingSheet(self.sheet)
         print(len(self.sheet))
         
         
@@ -54,27 +55,53 @@ class Game():
         
         
     def run(self):
-        import time
-        
         pygame.midi.init()
         player = pygame.midi.Output(0)
         player.set_instrument(0)
         
         
-        for n in self.sheet:
-            player.note_on(n.pitch, 127)
-            time.sleep(n.duration * 2)
-            player.note_off(n.pitch, 127)
-        
-        del player
-        pygame.midi.quit()
-        
+        i = 0 
+        start, stop = self.sheet.note_times[i]
+        #print(i, start, stop, self.timePassed)
+       
         while not self.gameOver:
+            if self.totalTimePassed >= len(self.sheet):
+                self.gameOver = True
+                
+            
+            elif self.totalTimePassed >= stop:
+                player.note_off(self.sheet[i].pitch, 127)
+                i += 1
+                if i < len(self.sheet.note_times):
+                    start, stop = self.sheet.note_times[i]
+                else:
+                    start = stop = len(self.sheet) + 1
+                #print('stop', i, start, stop, self.timePassed)                    
+            elif self.totalTimePassed >= start:
+                player.note_on(self.sheet[i].pitch, 127)
+                start = stop
+                #print('start', i, start, stop, self.timePassed)                    
+            else:
+                #print('diff', i, start, stop, self.timePassed)                    
+                pass
+                    
+            
             self.updateScreen()
             pygame.display.update()
-            self.timePassed += clock.tick(FPS)
-            print(self.timePassed)
+            timePassed = clock.tick(FPS)
+            self.totalTimePassed += timePassed
+            step = int(SPEED * timePassed / 1000)
+            #print(timePassed, step)
+            self.scroll.updatePos(step)
+
             self.checkForQuit()
+            
+
+
+            
+        del player
+        pygame.midi.quit()
+            
 
     
     def checkForQuit(self):
@@ -84,13 +111,35 @@ class Game():
         
     def updateScreen(self):
         screen.fill(BG_COLOR) 
-        pygame.draw.line(screen, BLACK, (0, HEIGHT // 2), (WIDTH, HEIGHT // 2), 1)
+        for i in range(-2, 3):
+            pygame.draw.line(screen, BLACK, (self.scroll.pos['startx'], HEIGHT // 2 + i * BAR_HEIGHT), 
+                             (min(self.scroll.pos['endx'], WIDTH - SCREEN_MARGIN), HEIGHT // 2 + i * BAR_HEIGHT), 1)
+        pygame.draw.line(screen, RED, (SCREEN_MARGIN + PLAYER_X, 0), (SCREEN_MARGIN + PLAYER_X, HEIGHT), 1)            
+
+
+
+class ScrollingSheet():
+    def __init__(self, sheet):
+        self.sheet = sheet
+        self.pos = {'startx': SCREEN_MARGIN + PLAYER_X,
+                    'endx': int(SCREEN_MARGIN + PLAYER_X + SPEED * len(self.sheet) / 1000)}
+    
+    def updatePos(self, step):
+        for e in self.pos:
+            self.pos[e] -= step
+            if self.pos[e] < SCREEN_MARGIN:
+                if e in ('startx', 'endx'):
+                    self.pos[e] = SCREEN_MARGIN
+                else:
+                    del self.pos[e]
+        
+
 
 
 if __name__ == '__main__':
     init()
-    BeginScene()
+    BeginScene(screen)
     game = Game()
     game.run()
-    EndScene()
+    EndScene(screen)
     tearDown()

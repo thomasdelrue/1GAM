@@ -12,8 +12,9 @@ class Sheet(list):
         self.time = SHEET_MARGIN * 1000
         
     def append(self, note):
-        self.note_times.append(self.time)
-        self.time += (note.duration * 1000)
+        start, end = self.time, self.time + note.duration * 1000 * self.tempo
+        self.note_times.append((start, end))
+        self.time += end - start
         super(Sheet, self).append(note)
         
     def end(self):
@@ -48,12 +49,12 @@ def frere_jacques():
     sheet.append(Note(59, QUARTER))
     sheet.append(Note(55, QUARTER))
     
-    sheet.append(Note(55, QUARTER))
+    """sheet.append(Note(55, QUARTER))
     sheet.append(Note(57, QUARTER))
     sheet.append(Note(59, QUARTER))
     sheet.append(Note(55, QUARTER))
     
-    """sheet.append(Note(59, QUARTER))
+    sheet.append(Note(59, QUARTER))
     sheet.append(Note(60, QUARTER))
     sheet.append(Note(62, HALF))
     
